@@ -1,0 +1,6 @@
+id_registro,nombre,H14510,campo_23,observaciones
+1,Juan Pérez,12.345.678-5,+56 9 8765 4321,Cliente activo
+2,María González,7.654.321-6,912345678,Sin observaciones
+3,Pedro Soto,11.111.111-2,+56912223344,DV invalido a proposito (prueba de falso positivo)
+4,Ana Rojas,folio 20345678-6,,Este es un folio numerico similar a un RUT (negativo)
+5,Test Testing,test example 5.126.663-3,555-123-4567,Registro de prueba
