@@ -43,6 +43,10 @@ source venv/bin/activate        # En Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+## Inbstalar psycog
+
+pip install psycopg[binary]
+
 ## Correr la demo
 
 ```bash
