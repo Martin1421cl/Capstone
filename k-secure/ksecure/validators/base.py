@@ -1,58 +1,53 @@
-"""Interfaz base que deben implementar todos los validadores de K-Secure.
+import re
+from typing import List, Optional
+from ksecure.models import Finding, DataType, RiskLevel, Confidence
 
-Inspirado conceptualmente en el enfoque de detector.Validator de FerretScan
-(AWS Labs): cada validador expone un método para escanear contenido y un
-sistema de scoring de confianza basado en contexto (palabras clave
-positivas/negativas alrededor de la coincidencia).
-"""
+class BaseValidator:
+    def __init__(self, name: DataType, pattern: str, risk_level: RiskLevel, confidence: Confidence, score: float, whitelist: Optional[List[str]] = None):
+        self.name = name
+        self.pattern = re.compile(pattern)
+        self.risk_level = risk_level
+        self.confidence = confidence
+        self.score = score
+        self.whitelist = whitelist or [] 
 
-from abc import ABC, abstractmethod
+    def is_suppressed(self, value: str) -> bool:
+        clean_value = value.strip().replace(" ", "")
+        clean_whitelist = [w.replace(" ", "") for w in self.whitelist]
+        return clean_value in clean_whitelist
 
-from ksecure.models import Finding
+    def is_already_masked(self, value: str) -> bool:
+        return value.count('*') > 2 or value.count('X') > 2 or value.count('x') > 2
 
+    def mask(self, value: str) -> str:
+        raise NotImplementedError("Debe implementarse en la clase hija")
 
-class BaseValidator(ABC):
-    """Contrato mínimo de un validador de K-Secure."""
+    def normalize(self, value: str) -> str:
+        """Puede ser sobrescrito por clases hijas para estandarizar el formato."""
+        return value.strip()
 
-    #: Palabras clave que aumentan la confianza si aparecen cerca del match.
-    POSITIVE_KEYWORDS: tuple[str, ...] = ()
-
-    #: Palabras clave que disminuyen la confianza si aparecen cerca del match.
-    NEGATIVE_KEYWORDS: tuple[str, ...] = ()
-
-    #: Cuántos caracteres a cada lado del match se consideran "contexto".
-    CONTEXT_WINDOW = 40
-
-    @abstractmethod
-    def find(self, content: str, source: str) -> list[Finding]:
-        """Escanea `content` (texto plano) y retorna los Finding detectados.
-
-        `source` identifica de dónde viene el contenido (ej. nombre de
-        columna, archivo, etc.) y se propaga a cada Finding para trazabilidad.
-        """
-        raise NotImplementedError
-
-    def _extract_context(self, content: str, start: int, end: int) -> str:
-        lo = max(0, start - self.CONTEXT_WINDOW)
-        hi = min(len(content), end + self.CONTEXT_WINDOW)
-        return content[lo:hi].lower()
-
-    def _keyword_adjustment(self, context: str) -> tuple[float, list[str]]:
-        """Calcula el ajuste de score por palabras clave de contexto.
-
-        Retorna (delta, motivos) donde delta se suma al score base.
-        """
-        delta = 0.0
-        reasons: list[str] = []
-
-        for kw in self.POSITIVE_KEYWORDS:
-            if kw in context:
-                delta += 0.10
-                reasons.append(f'palabra clave positiva "{kw}"')
-
-        for kw in self.NEGATIVE_KEYWORDS:
-            if kw in context:
-                delta -= 0.20
-                reasons.append(f'palabra clave negativa "{kw}"')
-
-        return delta, reasons
+    def find(self, content: str, source: str) -> List[Finding]:
+        findings = []
+        if not content:
+            return findings
+            
+        for match in self.pattern.finditer(content):
+            raw_value = match.group(0)
+            
+            if self.is_suppressed(raw_value) or self.is_already_masked(raw_value):
+                continue
+                
+            finding = Finding(
+                source=source,
+                data_type=self.name,
+                risk_level=self.risk_level,
+                confidence=self.confidence,
+                confidence_score=self.score,
+                is_valid=True,
+                raw_value=raw_value,
+                normalized_value=self.normalize(raw_value),
+                masked_value=self.mask(raw_value)
+            )
+            findings.append(finding)
+            
+        return findings

@@ -1,6 +1,11 @@
-id_registro,nombre,H14510,campo_23,observaciones
-1,Juan Pérez,12.345.678-5,+56 9 8765 4321,Cliente activo
-2,María González,7.654.321-6,912345678,Sin observaciones
-3,Pedro Soto,11.111.111-2,+56912223344,DV invalido a proposito (prueba de falso positivo)
-4,Ana Rojas,folio 20345678-6,,Este es un folio numerico similar a un RUT (negativo)
-5,Test Testing,test example 5.126.663-3,555-123-4567,Registro de prueba
+id_registro,nombre,documento,contacto,pago,observaciones
+1,Juan Pérez,18.123.456-7,+56 9 8765 4321,5555-4444-3333-2222,Enviar factura a juan.perez@empresa-real.cl
+2,Usuario Prueba QA,11.111.111-1,+56900000000,4242424242424242,Usar cuenta test@example.com para control de calidad
+3,María González,7654321-6,+56912341122,5555666677779988,El correo personal es maria.g@gmail.com
+4,Ana Rojas,folio 20345678-6,912345678,Sin registro,Teléfono sin código de país y correo ana.rojas.gmail.com inválido
+5,Pedro Soto,12.345.678-5,+56 9 1122 3344,4532111122223333,Cliente frecuente. Contactar a auditoria_interna@duocuc.cl
+6,Laura Mella,15.678.901-K,+56 9 4444 5555,378282246310005,Pago exitoso con tarjeta Amex asociada a laurita@banco.cl
+7,Carlos Pinto,9.876.543-2,+569 8888 9999,4111-1111-1111-1111,Cuenta de prueba que usa el correo ejemplo@duoc.cl
+8,Roberto Gómez,22.333.444-5,+56 9 7777 6666,5100-2222-3333-4444,Tiene dos correos: ventas@ecommerce.cl y admin@ecommerce.cl
+9,Francisca Vega,19.876.543-1,+56 9 2233 4455,4000000000000000,Rechazado por usar tarjeta de prueba. Escribir a fran.v@startup.com
+10,Diego Tapia,8.123.456-9,+56 9 5566 7788,5555 4444 3333 2222,El cliente diego.tapia@empresa.com pago usando espacios en la tarjeta
