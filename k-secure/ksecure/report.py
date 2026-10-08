@@ -24,10 +24,12 @@ class ClassificationReport:
         RiskLevel.PUBLICO,
     ]
 
-    def __init__(self, findings: list[Finding]):
-        self.findings = sorted(
+    def __init__(self, findings: list[Finding], limite: int = 10):
+        # Ordenamos los hallazgos por nivel de riesgo y luego recortamos al límite especificado (por defecto 10)
+        findings_ordenados = sorted(
             findings, key=lambda f: self._ORDEN_RIESGO.index(f.risk_level)
         )
+        self.findings = findings_ordenados[:limite]
 
     def summary(self) -> dict:
         """Resumen: cantidad de hallazgos por nivel de riesgo y por tipo de dato."""

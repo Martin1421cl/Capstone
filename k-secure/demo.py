@@ -1,33 +1,44 @@
-from pathlib import Path
+import random
+from faker import Faker
+from ksecure.database import SessionLocal, engine, Base
+from ksecure.db_models import CompanyData
 
-from ksecure.report import ClassificationReport
-from ksecure.scanner import KSecureScanner
-from ksecure.database import init_db
-from ksecure.db_service import save_findings_to_db
 
-def main() -> None:
-    # 1. Crear las tablas en PostgreSQL (si no existen)
-    init_db()
+# Usamos el locale de Chile para que genere datos con formato local
+fake = Faker('es_CL')
 
-    # 2. Inicializar el motor y escanear
-    scanner = KSecureScanner()
-    archivo_csv = Path("examples/sample_data.csv")
+def generate_data(num_records=800):
+    # Crea la tabla en PostgreSQL si no existe
+    Base.metadata.create_all(bind=engine)
     
-    print(f"Escaneando archivo: {archivo_csv.name}...")
-    findings = scanner.scan_csv(archivo_csv) # Asumiendo que esta es la función en scanner.py
-
-    # 3. Persistir en PostgreSQL los hallazgos enmascarados
-    save_findings_to_db(findings)
-
-    # 4. Generar reporte en consola (manteniendo el flujo anterior)
-    report = ClassificationReport(findings)
-    archivo_salida = "reporte_ksecure.json"
+    db = SessionLocal()
     
-    # Le pasamos la ruta donde queremos guardar el JSON
-    report.to_json(archivo_salida) 
+    # Limpiamos la tabla por si lo ejecutas más de una vez
+    db.query(CompanyData).delete()
+    db.commit()
+
+    print(f"Generando {num_records} registros de prueba para K-Secure...")
+    records = []
     
-    print("\n--- Reporte de Clasificación ---")
-    print(f"El reporte completo se ha guardado exitosamente en el archivo: {archivo_salida}")
+    for _ in range(num_records):
+        # Generamos un RUT realista
+        rut_simulado = f"{random.randint(5000000, 25000000)}-{random.choice('0123456789K')}"
+        
+        record = CompanyData(
+            nombre=fake.name(),
+            rut=rut_simulado,
+            email=fake.email(),
+            telefono=fake.phone_number(),
+            tarjeta_credito=fake.credit_card_number(),
+          
+        )
+        records.append(record)
+    
+    # Inserción masiva para mayor rendimiento
+    db.bulk_save_objects(records)
+    db.commit()
+    db.close()
+    print("¡Generación exitosa! Base de datos lista.")
 
 if __name__ == "__main__":
-    main()
+    generate_data()

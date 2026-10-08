@@ -38,16 +38,30 @@ k-secure/
 ## Instalación
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate        # En Windows: venv\Scripts\activate
-pip install -r requirements.txt
+python -m venv venv
+
+
+.\venv\Scripts\Activate.ps1 #en powershell
+
+venv\Scripts\activate # windows      
+
+pip install -r requirements.txt # instalacion de dependencias (quizas debas ejecutarlo 2 veces error de user)
 ```
 
 ## Correr la demo
-
 ```bash
+
+#crea la bd y el user en postgresql (en caso de que este ya creado saldra un texto de confirmacion)
+.\setup_db.ps1
+
+# genera 800 registros
 python demo.py
+
+# lanzar la pagina
+uvicorn main:app --reload
 ```
+
+
 
 Esto escanea `examples/sample_data.csv` (simula una tabla exportada
 de una base de datos, con una columna llamada `H14510` que en
