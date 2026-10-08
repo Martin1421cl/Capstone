@@ -1,29 +1,37 @@
 import re
-from ksecure.models import Confidence, DataType, Finding, RiskLevel
 from ksecure.validators.base import BaseValidator
-
-_EMAIL_PATTERN = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b")
+from ksecure.models import DataType, RiskLevel, Confidence
 
 class EmailValidator(BaseValidator):
-    """Detecta direcciones de correo electrónico."""
+    def __init__(self, custom_whitelist=None):
+        # Ejemplos documentados que no representan un riesgo real
+        default_whitelist = ["test@example.com", "usuario@prueba.cl", "ejemplo@duoc.cl"]
+        whitelist = custom_whitelist if custom_whitelist is not None else default_whitelist
 
-    def find(self, text: str, source: str) -> list[Finding]:
-        findings = []
-        for match in _EMAIL_PATTERN.finditer(text):
-            raw_value = match.group(0)
-            
-            findings.append(Finding(
-                data_type=DataType.CORREO_ELECTRONICO,
-                raw_value=raw_value,
-                normalized_value=raw_value.lower(),
-                is_valid=True,
-                confidence=Confidence.ALTA,
-                confidence_score=0.95,
-                risk_level=RiskLevel.CONFIDENCIAL, 
-                source=source,
-                reasons=["Coincidencia con patrón estándar de Email RFC"]
-            ))
-            
-        return findings
+        super().__init__(
+            name=DataType.CORREO_ELECTRONICO,
+            pattern=r"\b[A-Za-z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", 
+            risk_level=RiskLevel.INTERNO,
+            confidence=Confidence.ALTA,
+            score=0.90,
+            whitelist=whitelist
+        )
+        # Re-compilamos la regex con el flag IGNORECASE para mayor robustez
+        self.pattern = re.compile(self.pattern.pattern, re.IGNORECASE)
 
+    def mask(self, value: str) -> str:
+        """Oculta el nombre de usuario, dejando visible la primera letra y el dominio."""
+        partes = value.split('@')
+        usuario = partes[0]
+        dominio = partes[1]
         
+        if len(usuario) > 2:
+            usuario_enmascarado = usuario[:2] + "****"
+        else:
+            usuario_enmascarado = "****"
+            
+        return f"{usuario_enmascarado}@{dominio}"
+
+    def normalize(self, value: str) -> str:
+        """Pasa todo a minúsculas para estandarizar."""
+        return value.strip().lower()

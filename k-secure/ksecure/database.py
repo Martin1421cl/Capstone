@@ -1,15 +1,22 @@
-"""Configuración de conexión a PostgreSQL usando SQLAlchemy."""
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# Cambia ksecure_user y tu_contraseña por los que crees en PostgreSQL
-SQLALCHEMY_DATABASE_URL = "postgresql://ksecure_user:1234@localhost:5432/ksecure_db"
+# Configuración de PostgreSQL
+DB_USER = "postgres"
+DB_PASSWORD = "1234" # Asegúrate de poner tu clave aquí
+DB_HOST = "localhost"
+DB_PORT = "5432"
+DB_NAME = "ksecure_db" 
+
+SQLALCHEMY_DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-def init_db():
-    """Crea las tablas en la base de datos si no existen."""
-    Base.metadata.create_all(bind=engine)
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
