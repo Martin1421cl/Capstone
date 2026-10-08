@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>K-Secure - Sensitive Data Detection</title>
+    <title>K-Secure - Detección de Datos Sensibles</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --color-background-layout-main: #f2f3f3;
@@ -14,9 +15,6 @@
             --color-text-status-error: #d13212;
             --color-text-status-warning: #ff9900;
             --color-text-status-success: #037f0c;
-            --space-scaled-s: 4px;
-            --space-scaled-m: 8px;
-            --space-scaled-l: 12px;
             --space-scaled-xl: 16px;
         }
 
@@ -89,7 +87,6 @@
         }
         .button-outline:hover { background: #f2f3f3; }
 
-        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -114,188 +111,248 @@
         .stat-title { font-size: 14px; color: #5f6b7a; margin-bottom: 4px; }
         .stat-value { font-size: 28px; font-weight: 300; margin: 0; }
         
-        /* Table Styles */
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .table th {
-            background: #fafbfc;
-            padding: 12px 16px;
-            text-align: left;
-            border-bottom: 2px solid var(--color-border-divider-default);
-            font-weight: 600;
-            font-size: 13px;
-            color: #5f6b7a;
-        }
-
-        .table td {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--color-border-divider-default);
-            font-size: 14px;
-            vertical-align: middle;
-        }
-
+        .table { width: 100%; border-collapse: collapse; }
+        .table th { background: #fafbfc; padding: 12px 16px; text-align: left; border-bottom: 2px solid var(--color-border-divider-default); font-weight: 600; font-size: 13px; color: #5f6b7a; }
+        .table td { padding: 12px 16px; border-bottom: 1px solid var(--color-border-divider-default); font-size: 14px; vertical-align: middle; }
         .table tr:hover { background: #f9f9f9; }
 
-        .confidence-badge {
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-            display: inline-block;
-        }
-
+        .confidence-badge { padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; display: inline-block; }
         .bg-restringido { background: #ffeaea; color: var(--color-text-status-error); }
         .bg-confidencial { background: #fff4e6; color: var(--color-text-status-warning); }
         .bg-interno { background: #eafaf1; color: var(--color-text-status-success); }
         
-        .finding-text {
+        .hidden-badge {
+            background-color: var(--color-text-status-error);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-block;
+            user-select: none;
+            transition: background 0.2s;
+        }
+        .hidden-badge:hover { background-color: #b0280e; }
+        
+        .revealed-text {
             font-family: "Courier New", Courier, monospace;
             background: #f2f3f3;
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 13px;
-            color: #d13212;
+            color: #16191f;
+            border: 1px solid #d5dbdb;
+            cursor: pointer;
+            display: inline-block;
         }
+
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #fafbfc;
+            border-top: 1px solid var(--color-border-divider-default);
+            border-radius: 0 0 8px 8px;
+        }
+        .pagination-info { font-size: 14px; color: #5f6b7a; font-weight: 600; }
+        .pagination-buttons button:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
     <div class="awsui-app-layout">
         <div class="top-nav">
-            <div class="top-nav-title">🛡️ K-Secure | Sensitive Data Detection</div>
+            <div class="top-nav-title">🛡️ K-Secure | Detección de Datos Sensibles</div>
             <div>
-                <span style="font-size: 13px; color: #ccc;">Proyecto Capstone - Fase 1</span>
+                <span style="font-size: 13px; color: #ccc;">Proyecto Capstone - Fase 2</span>
             </div>
         </div>
 
         <div class="main-content">
             
-            <!-- SECCIÓN: Subida de Archivos -->
             <div class="container">
                 <div class="container-header">
-                    <h2 class="header-h2">File Upload and Configuration</h2>
+                    <h2 class="header-h2">Carga y Configuración de Archivos</h2>
                 </div>
                 <div class="container-content">
                     <div style="margin-bottom: 8px;">
-                        <label style="font-weight: 600; font-size: 14px; color: var(--color-text-body-default);">Files to scan</label>
-                        <div style="color: #5f6b7a; font-size: 12px; margin-bottom: 8px;">Select a file to analyze for sensitive data (TXT, CSV, DOCX, XLSX, PDF)</div>
+                        <label style="font-weight: 600; font-size: 14px; color: var(--color-text-body-default);">Archivos para escanear</label>
+                        <div style="color: #5f6b7a; font-size: 12px; margin-bottom: 8px;">Selecciona un archivo para analizar datos sensibles (TXT, CSV, DOCX, XLSX, PDF)</div>
                     </div>
                     
-                    <div style="border: 2px dashed var(--color-border-divider-default); border-radius: 8px; padding: 24px; text-align: center; background: #fafbfc; transition: border-color 0.2s;" id="dropzone">
-                        <input type="file" id="fileInput" hidden accept=".csv,.txt,.docx,.xlsx,.pdf">
-                        <button type="button" class="button button-outline" onclick="document.getElementById('fileInput').click()">Choose File</button>
-                        <div id="uploadStatus" style="margin-top: 8px; color: #5f6b7a; font-size: 14px;">or click to select a file</div>
+                    <div style="border: 2px dashed var(--color-border-divider-default); border-radius: 8px; padding: 24px; text-align: center; background: #fafbfc;" id="dropzone">
+                        <input type="file" id="fileInput" hidden accept=".csv,.txt,.docx,.xlsx,.xls,.pdf">
+                        <button type="button" class="button button-outline" onclick="document.getElementById('fileInput').click()">Elegir Archivo</button>
+                        <div id="uploadStatus" style="margin-top: 8px; color: #5f6b7a; font-size: 14px;">o haz clic para escanear un documento nuevo</div>
                     </div>
                 </div>
             </div>
 
-            <!-- SECCIÓN: Resultados del Escaneo -->
+            <!-- El bloque de Análisis de Base de Datos Maestra y su botón han sido removidos por completo -->
+
             <div class="container">
                 <div class="container-header">
-                    <h2 class="header-h2">Scan Results</h2>
+                    <h2 class="header-h2">Resultados del Escaneo</h2>
                     <div>
-                        <button class="button button-outline" onclick="cargarDatos()">↻ Refresh Data</button>
+                        <button class="button button-outline" onclick="cargarDatos()">↻ Actualizar Datos</button>
                     </div>
                 </div>
 
-                <div class="container-content">
+                <div class="container-content" style="padding-bottom: 0;">
                     
-                    <!-- Tarjetas de Estadísticas -->
                     <div class="stats-grid">
                         <div class="stat-card total">
-                            <div class="stat-title">Total Findings</div>
+                            <div class="stat-title">Total de Hallazgos</div>
                             <div class="stat-value" id="stat-total">0</div>
                         </div>
                         <div class="stat-card high">
-                            <div class="stat-title">Restringido (High Risk)</div>
+                            <div class="stat-title">Restringido (Alto Riesgo)</div>
                             <div class="stat-value" id="stat-restringido">0</div>
                         </div>
                         <div class="stat-card medium">
-                            <div class="stat-title">Confidencial (Medium)</div>
+                            <div class="stat-title">Confidencial (Medio)</div>
                             <div class="stat-value" id="stat-confidencial">0</div>
                         </div>
                         <div class="stat-card low">
-                            <div class="stat-title">Interno (Low Risk)</div>
+                            <div class="stat-title">Interno (Bajo Riesgo)</div>
                             <div class="stat-value" id="stat-interno">0</div>
                         </div>
                     </div>
 
-                    <!-- Tabla -->
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Risk Level</th>
-                                <th>Type</th>
-                                <th>Matched Value</th>
-                                <th>Source File / Location</th>
-                                <th>Validation</th>
-                                <th>Date</th>
+                                <th>Nivel de Riesgo</th>
+                                <th>Tipo</th>
+                                <th>Conf%</th>
+                                <th>Línea / Origen</th>
+                                <th>Valor Coincidente (Match)</th>
+                                <th>Fecha</th>
                             </tr>
                         </thead>
                         <tbody id="resultsBody">
-                            <tr><td colspan="6" style="text-align: center; color: #5f6b7a;">Loading data from PostgreSQL...</td></tr>
+                            <tr><td colspan="6" style="text-align: center; color: #5f6b7a;">Cargando datos desde PostgreSQL...</td></tr>
                         </tbody>
                     </table>
+                </div>
 
+                <div class="pagination-container">
+                    <div class="pagination-info" id="pageInfo">Mostrando 0-0 de 0 hallazgos</div>
+                    <div class="pagination-buttons">
+                        <button class="button button-outline" id="btnPrev" onclick="cambiarPagina(-1)">Anterior</button>
+                        <button class="button button-outline" id="btnNext" onclick="cambiarPagina(1)">Siguiente</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Script de Lógica -->
     <script>
-        // Formato visual para los niveles de riesgo
+        let rawDatabase = []; 
+        let allFindings = []; 
+        let currentPage = 1;
+        const itemsPerPage = 50;
+
         function getRiskBadge(risk) {
-            if (risk === "Restringido") return `<span class="confidence-badge bg-restringido">HIGH</span>`;
-            if (risk === "Confidencial") return `<span class="confidence-badge bg-confidencial">MEDIUM</span>`;
-            if (risk === "Interno") return `<span class="confidence-badge bg-interno">LOW</span>`;
+            if (risk === "Restringido") return `<span class="confidence-badge bg-restringido">ALTO</span>`;
+            if (risk === "Confidencial") return `<span class="confidence-badge bg-confidencial">MEDIO</span>`;
+            if (risk === "Interno") return `<span class="confidence-badge bg-interno">BAJO</span>`;
             return `<span class="confidence-badge" style="background:#e9ebed; color:#5f6b7a;">INFO</span>`;
         }
 
-        // Cargar los datos desde PostgreSQL al Dashboard
-        async function cargarDatos() {
+        async function solicitarClave() {
+            const pwd = prompt("ACCESO RESTRINGIDO:\nIngrese la contraseña de pgAdmin para visualizar el dato en texto plano:");
+            if (!pwd) return false;
+
             try {
-                const respuesta = await fetch('/api/alertas');
-                const alertas = await respuesta.json();
-                
-                const tbody = document.getElementById('resultsBody');
-                tbody.innerHTML = ''; 
+                const response = await fetch('/api/unmask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: pwd })
+                });
 
-                let cTotal = 0, cRestringido = 0, cConfidencial = 0, cInterno = 0;
+                if (response.ok) {
+                    rawDatabase = await response.json(); 
+                    return true;
+                } else {
+                    alert("Error: Contraseña de base de datos incorrecta. Se mantiene el hash por seguridad.");
+                    return false;
+                }
+            } catch (error) {
+                alert("Error de conexión al validar la clave.");
+                return false;
+            }
+        }
 
-                if (alertas.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #5f6b7a;">No findings detected yet.</td></tr>';
-                    // Reiniciar contadores visuales si está vacío
-                    document.getElementById('stat-total').innerText = 0;
-                    document.getElementById('stat-restringido').innerText = 0;
-                    document.getElementById('stat-confidencial').innerText = 0;
-                    document.getElementById('stat-interno').innerText = 0;
-                    return;
+        async function toggleMask(element, id, field, maskedValue, rawValueFallback) {
+            const currentState = element.getAttribute('data-state');
+            
+            if (currentState === 'oculto') {
+                element.innerHTML = `<i class="fa-solid fa-fingerprint"></i> ${maskedValue}`;
+                element.className = "revealed-text";
+                element.setAttribute('data-state', 'hashed');
+                element.title = "Haz clic para ver el dato original (Requiere contraseña)";
+            } 
+            else if (currentState === 'hashed') {
+                if (rawDatabase.length === 0) {
+                    const exito = await solicitarClave();
+                    if (!exito) return; 
                 }
 
-                alertas.forEach(alerta => {
-                    cTotal++;
-                    if (alerta.risk_level === "Restringido") cRestringido++;
-                    else if (alerta.risk_level === "Confidencial") cConfidencial++;
-                    else if (alerta.risk_level === "Interno") cInterno++;
+                const registro = rawDatabase.find(r => r.id === id);
+                const realValue = (registro && registro[field]) ? registro[field] : rawValueFallback;
 
-                    const fechaObj = new Date(alerta.timestamp);
-                    const fecha = fechaObj.toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit'});
-                    
-                    const fila = `
-                        <tr>
-                            <td>${getRiskBadge(alerta.risk_level)}</td>
-                            <td style="font-weight: 600; color: #16191f;">${alerta.data_type}</td>
-                            <td><span class="finding-text">${alerta.masked_value}</span></td>
-                            <td style="color: #5f6b7a;">${alerta.source}</td>
-                            <td>${alerta.is_valid ? '✅ Algorithmic match' : 'Pattern match'}</td>
-                            <td style="color: #5f6b7a; font-size: 13px;">${fecha}</td>
-                        </tr>
-                    `;
-                    tbody.innerHTML += fila;
+                element.innerHTML = `<i class="fa-solid fa-unlock"></i> ${realValue}`;
+                element.style.background = "#eafaf1";
+                element.style.color = "#037f0c";
+                element.style.borderColor = "#037f0c";
+                element.setAttribute('data-state', 'raw');
+                element.title = "Haz clic para volver a ocultar el dato";
+            }
+            else if (currentState === 'raw') {
+                element.innerHTML = `<i class="fa-solid fa-lock"></i> [OCULTO]`;
+                element.className = "hidden-badge";
+                element.removeAttribute('style'); 
+                element.setAttribute('data-state', 'oculto');
+                element.title = "";
+            }
+        }
+
+        // Se elimina la condición is_scanned ya que la columna fue removida de la BD
+        function renderValorCoincidente(id, field, valorBackend, mask) {
+            return `<span class="hidden-badge" data-state="oculto" onclick="toggleMask(this, ${id}, '${field}', '${mask}', '${valorBackend}')"><i class="fa-solid fa-lock"></i> [OCULTO]</span>`;
+        }
+
+        async function cargarDatos() {
+            try {
+                const respuesta = await fetch('/api/data');
+                const datos = await respuesta.json();
+                
+                datos.sort((a, b) => b.id - a.id);
+
+                allFindings = [];
+                let cTotal = 0, cRestringido = 0, cConfidencial = 0, cInterno = 0;
+
+                datos.forEach(row => {
+                    const hallazgos = [
+                        { id: row.id, tipo: "RUT", riesgo: "Restringido", conf: 99, origen: `Registro ID: ${row.id}\n${row.nombre}`, field: 'rut', valor: row.rut, mask: '*********-*' },
+                        { id: row.id, tipo: "Tarjeta de Crédito", riesgo: "Restringido", conf: 95, origen: `Registro ID: ${row.id}\n${row.nombre}`, field: 'tarjeta_credito', valor: row.tarjeta_credito, mask: '****-****-****-****' },
+                        { id: row.id, tipo: "Correo Electrónico", riesgo: "Confidencial", conf: 100, origen: `Registro ID: ${row.id}\n${row.nombre}`, field: 'email', valor: row.email, mask: '*****@*****.com' },
+                        { id: row.id, tipo: "Teléfono", riesgo: "Interno", conf: 90, origen: `Registro ID: ${row.id}\n${row.nombre}`, field: 'telefono', valor: row.telefono, mask: '+56 9 **** ****' }
+                    ];
+
+                    hallazgos.forEach(h => {
+                        if (h.valor && h.valor.trim() !== "") {
+                            cTotal++;
+                            if (h.riesgo === "Restringido") cRestringido++;
+                            else if (h.riesgo === "Confidencial") cConfidencial++;
+                            else if (h.riesgo === "Interno") cInterno++;
+                            
+                            allFindings.push(h);
+                        }
+                    });
                 });
 
                 document.getElementById('stat-total').innerText = cTotal;
@@ -303,14 +360,72 @@
                 document.getElementById('stat-confidencial').innerText = cConfidencial;
                 document.getElementById('stat-interno').innerText = cInterno;
 
+                currentPage = 1;
+                renderizarTabla();
+
             } catch (error) {
                 console.error("Error:", error);
                 document.getElementById('resultsBody').innerHTML = 
-                    '<tr><td colspan="6" style="text-align: center; color: #d13212;">Error connecting to K-Secure API. Check if Uvicorn is running.</td></tr>';
+                    '<tr><td colspan="6" style="text-align: center; color: #d13212;">Error al conectar con la API de K-Secure.</td></tr>';
             }
         }
 
-        // Lógica de Subida de Archivos
+        function renderizarTabla() {
+            const tbody = document.getElementById('resultsBody');
+            tbody.innerHTML = '';
+
+            if (allFindings.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #5f6b7a;">No hay datos en la base de datos.</td></tr>';
+                actualizarControlesPaginacion();
+                return;
+            }
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const datosPagina = allFindings.slice(startIndex, endIndex);
+
+            let filasHTML = '';
+            const fecha = new Date().toLocaleString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute:'2-digit'});
+
+            datosPagina.forEach(h => {
+                const tdValor = renderValorCoincidente(h.id, h.field, h.valor, h.mask);
+
+                filasHTML += `
+                    <tr>
+                        <td>${getRiskBadge(h.riesgo)}</td>
+                        <td style="font-weight: 600; color: #16191f;">${h.tipo}</td>
+                        <td>${h.conf}%</td>
+                        <td style="color: #5f6b7a; font-size: 13px;">${h.origen}</td>
+                        <td>${tdValor}</td>
+                        <td style="color: #5f6b7a; font-size: 13px;">${fecha}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = filasHTML;
+            actualizarControlesPaginacion();
+        }
+
+        function cambiarPagina(direccion) {
+            currentPage += direccion;
+            renderizarTabla();
+        }
+
+        function actualizarControlesPaginacion() {
+            const totalPages = Math.ceil(allFindings.length / itemsPerPage);
+            
+            document.getElementById('btnPrev').disabled = currentPage === 1;
+            document.getElementById('btnNext').disabled = currentPage === totalPages || totalPages === 0;
+
+            if (allFindings.length > 0) {
+                const start = (currentPage - 1) * itemsPerPage + 1;
+                const end = Math.min(currentPage * itemsPerPage, allFindings.length);
+                document.getElementById('pageInfo').innerText = `Mostrando ${start}-${end} de ${allFindings.length} hallazgos (Página ${currentPage} de ${totalPages})`;
+            } else {
+                document.getElementById('pageInfo').innerText = "Mostrando 0 hallazgos";
+            }
+        }
+
         const fileInput = document.getElementById('fileInput');
         const uploadStatus = document.getElementById('uploadStatus');
 
@@ -318,7 +433,7 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            uploadStatus.innerHTML = `⏳ Scanning <strong>${file.name}</strong>... please wait.`;
+            uploadStatus.innerHTML = `⏳ Analizando <strong>${file.name}</strong>... por favor espere.`;
             uploadStatus.style.color = "#ff9900";
 
             const formData = new FormData();
@@ -334,20 +449,24 @@
                 
                 const result = await response.json();
                 
-                uploadStatus.innerHTML = `✅ Scan complete. Found <strong>${result.findings_count}</strong> sensitive elements in ${file.name}.`;
-                uploadStatus.style.color = "#037f0c";
+                if(result.findings_count === 0){
+                    uploadStatus.innerHTML = `✅ Documento escaneado. No se detectaron datos sensibles.`;
+                    uploadStatus.style.color = "#5f6b7a";
+                } else {
+                    uploadStatus.innerHTML = `✅ Documento escaneado. Se extrajeron <strong>${result.findings_count}</strong> datos hacia PostgreSQL.`;
+                    uploadStatus.style.color = "#037f0c";
+                }
                 
                 fileInput.value = '';
+                rawDatabase = []; 
                 cargarDatos();
 
             } catch (error) {
-                uploadStatus.innerHTML = `❌ Error scanning file. Ensure backend supports this format.`;
+                uploadStatus.innerHTML = `❌ Error al analizar el archivo. Asegúrate de que no esté corrupto.`;
                 uploadStatus.style.color = "#d13212";
-                console.error("Error upload:", error);
             }
         });
 
-        // Cargar datos automáticamente al iniciar
         document.addEventListener("DOMContentLoaded", cargarDatos);
     </script>
 </body>

@@ -1,104 +1,138 @@
 {
   "resumen": {
-    "total_hallazgos": 8,
+    "total_hallazgos": 10,
     "por_nivel_riesgo": {
-      "Restringido": 4,
+      "Restringido": 5,
       "Confidencial": 3,
-      "Interno": 1
+      "Interno": 2
     },
     "por_tipo_dato": {
-      "RUT": 5,
-      "Teléfono móvil (+56 9)": 3
+      "RUT": 3,
+      "Tarjeta de Crédito": 2,
+      "Teléfono móvil (+56 9)": 3,
+      "Correo Electrónico": 2
     }
   },
   "hallazgos": [
     {
       "tipo_dato": "RUT",
-      "valor_detectado": "12.345.678-5",
-      "valor_normalizado": "12345678-5",
+      "valor_detectado": "18.123.456-7",
+      "valor_normalizado": "181234567",
+      "valor_enmascarado": "*****456-7",
       "formato_valido": true,
       "confianza": "Alta",
       "score_confianza": 0.85,
       "nivel_riesgo": "Restringido",
-      "origen": "sample_data.csv:H14510:fila 2",
-      "motivos": "formato coincide con patrón de RUT; dígito verificador válido (Módulo 11)"
+      "origen": "sample_data.csv:documento:fila 2",
+      "motivos": ""
+    },
+    {
+      "tipo_dato": "Tarjeta de Crédito",
+      "valor_detectado": "5555-4444-3333-2222",
+      "valor_normalizado": "5555444433332222",
+      "valor_enmascarado": "5555-****-****-****",
+      "formato_valido": true,
+      "confianza": "Alta",
+      "score_confianza": 0.95,
+      "nivel_riesgo": "Restringido",
+      "origen": "sample_data.csv:pago:fila 2",
+      "motivos": ""
     },
     {
       "tipo_dato": "RUT",
-      "valor_detectado": "7.654.321-6",
-      "valor_normalizado": "7654321-6",
+      "valor_detectado": "7654321-6",
+      "valor_normalizado": "76543216",
+      "valor_enmascarado": "*****21-6",
       "formato_valido": true,
       "confianza": "Alta",
       "score_confianza": 0.85,
       "nivel_riesgo": "Restringido",
-      "origen": "sample_data.csv:H14510:fila 3",
-      "motivos": "formato coincide con patrón de RUT; dígito verificador válido (Módulo 11)"
+      "origen": "sample_data.csv:documento:fila 4",
+      "motivos": ""
+    },
+    {
+      "tipo_dato": "Tarjeta de Crédito",
+      "valor_detectado": "5555666677779988",
+      "valor_normalizado": "5555666677779988",
+      "valor_enmascarado": "5555-****-****-****",
+      "formato_valido": true,
+      "confianza": "Alta",
+      "score_confianza": 0.95,
+      "nivel_riesgo": "Restringido",
+      "origen": "sample_data.csv:pago:fila 4",
+      "motivos": ""
     },
     {
       "tipo_dato": "RUT",
       "valor_detectado": "20345678-6",
-      "valor_normalizado": "20345678-6",
-      "formato_valido": true,
-      "confianza": "Media",
-      "score_confianza": 0.65,
-      "nivel_riesgo": "Restringido",
-      "origen": "sample_data.csv:H14510:fila 5",
-      "motivos": "formato coincide con patrón de RUT; dígito verificador válido (Módulo 11); palabra clave negativa \"folio\""
-    },
-    {
-      "tipo_dato": "RUT",
-      "valor_detectado": "5.126.663-3",
-      "valor_normalizado": "5126663-3",
+      "valor_normalizado": "203456786",
+      "valor_enmascarado": "*****678-6",
       "formato_valido": true,
       "confianza": "Alta",
       "score_confianza": 0.85,
       "nivel_riesgo": "Restringido",
-      "origen": "sample_data.csv:H14510:fila 6",
-      "motivos": "formato coincide con patrón de RUT; dígito verificador válido (Módulo 11)"
+      "origen": "sample_data.csv:documento:fila 5",
+      "motivos": ""
     },
     {
       "tipo_dato": "Teléfono móvil (+56 9)",
       "valor_detectado": "+56 9 8765 4321",
-      "valor_normalizado": "+56 9 8765 4321",
-      "formato_valido": true,
-      "confianza": "Alta",
-      "score_confianza": 0.75,
-      "nivel_riesgo": "Confidencial",
-      "origen": "sample_data.csv:campo_23:fila 2",
-      "motivos": "formato coincide con celular chileno (+56 9); incluye prefijo de país +56"
-    },
-    {
-      "tipo_dato": "Teléfono móvil (+56 9)",
-      "valor_detectado": "912345678",
-      "valor_normalizado": "+56 9 1234 5678",
+      "valor_normalizado": "+56987654321",
+      "valor_enmascarado": "+569****4321",
       "formato_valido": true,
       "confianza": "Media",
-      "score_confianza": 0.5,
+      "score_confianza": 0.75,
       "nivel_riesgo": "Confidencial",
-      "origen": "sample_data.csv:campo_23:fila 3",
-      "motivos": "formato coincide con celular chileno (+56 9)"
+      "origen": "sample_data.csv:contacto:fila 2",
+      "motivos": ""
     },
     {
       "tipo_dato": "Teléfono móvil (+56 9)",
-      "valor_detectado": "+56912223344",
-      "valor_normalizado": "+56 9 1222 3344",
+      "valor_detectado": "+56912341122",
+      "valor_normalizado": "+56912341122",
+      "valor_enmascarado": "+569****1122",
       "formato_valido": true,
-      "confianza": "Alta",
+      "confianza": "Media",
       "score_confianza": 0.75,
       "nivel_riesgo": "Confidencial",
-      "origen": "sample_data.csv:campo_23:fila 4",
-      "motivos": "formato coincide con celular chileno (+56 9); incluye prefijo de país +56"
+      "origen": "sample_data.csv:contacto:fila 4",
+      "motivos": ""
     },
     {
-      "tipo_dato": "RUT",
-      "valor_detectado": "11.111.111-2",
-      "valor_normalizado": "11111111-2",
-      "formato_valido": false,
-      "confianza": "Baja",
-      "score_confianza": 0.35,
+      "tipo_dato": "Teléfono móvil (+56 9)",
+      "valor_detectado": "+56 9 1122 3344",
+      "valor_normalizado": "+56911223344",
+      "valor_enmascarado": "+569****3344",
+      "formato_valido": true,
+      "confianza": "Media",
+      "score_confianza": 0.75,
+      "nivel_riesgo": "Confidencial",
+      "origen": "sample_data.csv:contacto:fila 6",
+      "motivos": ""
+    },
+    {
+      "tipo_dato": "Correo Electrónico",
+      "valor_detectado": "juan.perez@empresa-real.cl",
+      "valor_normalizado": "juan.perez@empresa-real.cl",
+      "valor_enmascarado": "ju****@empresa-real.cl",
+      "formato_valido": true,
+      "confianza": "Alta",
+      "score_confianza": 0.9,
       "nivel_riesgo": "Interno",
-      "origen": "sample_data.csv:H14510:fila 4",
-      "motivos": "formato coincide con patrón de RUT; dígito verificador no coincide (esperado 1, encontrado 2)"
+      "origen": "sample_data.csv:observaciones:fila 2",
+      "motivos": ""
+    },
+    {
+      "tipo_dato": "Correo Electrónico",
+      "valor_detectado": "maria.g@gmail.com",
+      "valor_normalizado": "maria.g@gmail.com",
+      "valor_enmascarado": "ma****@gmail.com",
+      "formato_valido": true,
+      "confianza": "Alta",
+      "score_confianza": 0.9,
+      "nivel_riesgo": "Interno",
+      "origen": "sample_data.csv:observaciones:fila 4",
+      "motivos": ""
     }
   ]
 }
