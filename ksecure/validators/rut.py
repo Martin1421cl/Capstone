@@ -8,8 +8,8 @@
 import itertools
 import re
 
-from ksecure.core.models import ConfidenceLevel, Match, RiskLevel
-from ksecure.validators.base import Validator
+from ksecure.core.models import ConfidenceLevel, RiskLevel
+from ksecure.validators.base import Candidate, Validator
 
 # Word suele autocorregir "-" a "–", así que se aceptan ambos guiones.
 _RUT_PATTERN = re.compile(r"(?<![\d.])(\d{1,2}(?:\.\d{3}){2}|\d{7,8})\s?[-‐–]\s?([0-9kK])(?!\w)")
@@ -45,21 +45,23 @@ class RutValidator(Validator):
         "telefono", "codigo postal", "serie",
     )
 
-    def validate_content(self, content: str, filename: str) -> list[Match]:
-        matches = []
-        for line_number, line in enumerate(content.splitlines(), start=1):
-            for m in _RUT_PATTERN.finditer(line):
-                cuerpo = m.group(1).replace(".", "")
-                if int(cuerpo) < 1_000_000:
-                    continue
-                matches.append(self._build_match(m, line, line_number, filename, cuerpo))
-        return matches
+    def find_candidates(self, line):
+        for m in _RUT_PATTERN.finditer(line):
+            cuerpo, dv = m.group(1).replace(".", ""), m.group(2).upper()
+            if int(cuerpo) < 1_000_000:
+                continue
+            confidence, checks = self.calculate_confidence(m.group(0), cuerpo, dv)
+            yield Candidate(m.start(), m.end(), confidence, {
+                "rut_normalizado": f"{cuerpo}-{dv}",
+                "persona_juridica": int(cuerpo) >= _EMPRESA_DESDE,
+                "checks": checks,
+            })
 
     def calculate_confidence(self, rut_text: str, cuerpo: str, dv: str) -> tuple[float, dict[str, bool]]:
         """Confianza 0-100 sin contexto, y los chequeos que la explican."""
         checks = {
             "formato_con_puntos": "." in rut_text,
-            "dv_valido": calcular_dv(int(cuerpo)) == dv.upper(),
+            "dv_valido": calcular_dv(int(cuerpo)) == dv,
             "rut_de_ejemplo": es_rut_de_ejemplo(cuerpo),
         }
         confidence = 90 if checks["formato_con_puntos"] else 75
@@ -69,37 +71,8 @@ class RutValidator(Validator):
             confidence -= 40
         return confidence, checks
 
-    def _build_match(self, m: re.Match, line: str, line_number: int, filename: str, cuerpo: str) -> Match:
-        confidence, checks = self.calculate_confidence(m.group(0), cuerpo, m.group(2))
-
-        context = self.extract_context(line, m.start(), m.end())
-        context.confidence_impact = (
-            min(10 * len(context.positive_keywords), 20)
-            - min(20 * len(context.negative_keywords), 40)
-        )
-        confidence = max(0.0, min(100.0, confidence + context.confidence_impact))
-
-        es_empresa = int(cuerpo) >= _EMPRESA_DESDE
-        if ConfidenceLevel.from_score(confidence) == ConfidenceLevel.LOW or es_empresa:
-            # El RUT de una empresa sale en cada factura: no identifica a una persona.
-            risk = RiskLevel.INTERNO
-        else:
-            risk = RiskLevel.RESTRINGIDO
-
-        return Match(
-            text=m.group(0),
-            type="RUT",
-            confidence=confidence,
-            risk_level=risk,
-            line_number=line_number,
-            filename=filename,
-            validator=self.name,
-            context=context,
-            start_column=m.start() + 1,
-            end_column=m.end() + 1,
-            metadata={
-                "rut_normalizado": f"{cuerpo}-{m.group(2).upper()}",
-                "persona_juridica": es_empresa,
-                "checks": checks,
-            },
-        )
+    def risk_level(self, confidence, metadata):
+        # El RUT de una empresa sale en cada factura: no identifica a una persona.
+        if ConfidenceLevel.from_score(confidence) == ConfidenceLevel.LOW or metadata["persona_juridica"]:
+            return RiskLevel.INTERNO
+        return RiskLevel.RESTRINGIDO
