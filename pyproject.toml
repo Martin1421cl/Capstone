@@ -1,0 +1,9 @@
+[project]
+name = "ksecure"
+version = "0.1.0"
+description = "Clasificación de datos sensibles chilenos, basado en el diseño de ferret-scan (AWS Labs)"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
