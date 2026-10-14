@@ -28,6 +28,16 @@ ksecure/
 tests/
 ```
 
+## Uso
+
+```bash
+.venv\Scriptsctivate
+python -m ksecure documento.docx          # un archivo
+python -m ksecure C:\carpeta\conrchivos  # una carpeta completa
+```
+
+Termina con código 1 si encuentra datos sensibles (útil en CI, como ferret-scan).
+
 ## Pruebas
 
 ```bash
