@@ -31,9 +31,9 @@ tests/
 ## Uso
 
 ```bash
-.venv\Scriptsctivate
+.venv\Scripts\activate
 python -m ksecure documento.docx          # un archivo
-python -m ksecure C:\carpeta\conrchivos  # una carpeta completa
+python -m ksecure C:\carpeta\con\archivos  # una carpeta completa
 ```
 
 Termina con código 1 si encuentra datos sensibles (útil en CI, como ferret-scan).
