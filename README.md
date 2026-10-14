@@ -25,18 +25,22 @@ ksecure/
     ├── texto.py            # txt, csv, json, código...: detecta UTF-8, UTF-16 y cp1252
     ├── office.py           # docx, xlsx, pptx, odt, ods, odp: texto y metadata (zipfile + XML, como ferret-scan)
     └── pdf.py              # Texto, formularios y metadata (pypdf)
+└── web/
+    ├── app.py              # FastAPI: /, /scan, /health (como internal/web de ferret-scan)
+    └── static/index.html   # Página para subir archivos y ver resultados
 tests/
 ```
 
-## Uso
+## Uso (web)
 
 ```bash
 .venv\Scripts\activate
-python -m ksecure documento.docx          # un archivo
-python -m ksecure C:\carpeta\con\archivos  # una carpeta completa
+pip install -r requirements.txt
+uvicorn ksecure.web.app:app --reload
 ```
 
-Termina con código 1 si encuentra datos sensibles (útil en CI, como ferret-scan).
+Abrir http://localhost:8000, subir uno o más archivos y ver los hallazgos.
+La API queda documentada en http://localhost:8000/docs (`POST /scan`, `GET /health`).
 
 ## Pruebas
 
