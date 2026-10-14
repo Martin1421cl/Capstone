@@ -19,6 +19,12 @@ ksecure/
     ├── cuenta_bancaria.py  # Solo con contexto bancario (BancoEstado, cta cte...)
     ├── patente.py          # PPU nueva (BBCD·12) y antigua (AB·12·34)
     └── secreto.py          # Claves AWS, tokens GitHub, llaves privadas
+└── preprocessors/
+    ├── __init__.py         # Router: process_file() pasa el archivo por cada preprocesador que lo acepta
+    ├── base.py             # ProcessedContent, Section, clase base Preprocessor
+    ├── texto.py            # txt, csv, json, código...: detecta UTF-8, UTF-16 y cp1252
+    ├── office.py           # docx, xlsx, pptx, odt, ods, odp: texto y metadata (zipfile + XML, como ferret-scan)
+    └── pdf.py              # Texto, formularios y metadata (pypdf)
 tests/
 ```
 
