@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Base de datos · K-Secure</title>
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/css/ksecure.css">
+</head>
+<body data-pagina="base-datos">
+  <header id="site-header" class="site-header"></header>
+
+  <main class="container" style="max-width:920px">
+    <h1 class="entrar">Conectar una base de datos</h1>
+    <p class="muted entrar">K-Secure revisa cada columna y te dice cuáles guardan datos sensibles, aunque su nombre no lo diga.</p>
+
+    <ol class="stepper" id="stepper">
+      <li><span>1</span>Motor</li>
+      <li><span>2</span>Conexión</li>
+      <li><span>3</span>Tablas</li>
+    </ol>
+
+    <!-- Paso 1 -->
+    <section id="paso-1" class="paso">
+      <div class="grid grid-3" id="motores"></div>
+    </section>
+
+    <!-- Paso 2 -->
+    <section id="paso-2" class="paso" hidden>
+      <form id="form-conexion" class="card">
+        <h2 id="titulo-conexion">Datos de conexión</h2>
+        <div class="form-grid">
+          <div class="campo"><label for="host">Servidor</label><input id="host" name="host" value="localhost" required autocomplete="off"></div>
+          <div class="campo"><label for="puerto">Puerto</label><input id="puerto" name="puerto" type="number" min="1" max="65535"></div>
+          <div class="campo"><label for="base" id="label-base">Base de datos</label><input id="base" name="base" required autocomplete="off"></div>
+          <div class="campo"><label for="usuario">Usuario</label><input id="usuario" name="usuario" autocomplete="off"></div>
+          <div class="campo"><label for="clave">Contraseña</label><input id="clave" name="clave" type="password" autocomplete="off"></div>
+        </div>
+        <div class="aviso" id="aviso-lectura"></div>
+        <div style="display:flex;justify-content:space-between;gap:12px;margin-top:20px;flex-wrap:wrap">
+          <button class="btn" type="button" id="volver-1">← Cambiar motor</button>
+          <button class="btn btn-primary" type="submit" id="probar">Probar conexión</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Paso 3 -->
+    <section id="paso-3" class="paso" hidden>
+      <div class="card">
+        <div class="section-title">
+          <h2 style="margin:0" id="titulo-tablas">Elige las tablas</h2>
+          <label style="display:flex;gap:8px;align-items:center;margin:0"><input type="checkbox" id="todas" checked> Todas</label>
+        </div>
+        <div class="tablas" id="tablas"></div>
+        <div class="campo" style="max-width:260px">
+          <label for="max-filas">Filas a revisar por tabla</label>
+          <select id="max-filas">
+            <option value="100">100 (rápido)</option>
+            <option value="1000" selected>1.000</option>
+            <option value="10000">10.000</option>
+            <option value="100000">100.000 (lento)</option>
+          </select>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <button class="btn" type="button" id="volver-2">← Cambiar conexión</button>
+          <button class="btn btn-primary" type="button" id="escanear">Escanear</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+  <script type="module" src="/js/base-datos.js"></script>
+</body>
+</html>

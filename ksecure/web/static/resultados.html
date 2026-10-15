@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resultados · K-Secure</title>
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/css/ksecure.css">
+</head>
+<body data-pagina="resultados">
+  <header id="site-header" class="site-header"></header>
+
+  <main class="container">
+    <div class="section-title entrar">
+      <div>
+        <p class="muted" style="margin:0" id="meta"></p>
+        <h1 style="margin:0;overflow-wrap:anywhere" id="titulo">Resultados</h1>
+      </div>
+      <button class="btn btn-danger" id="borrar" type="button" hidden>Borrar escaneo</button>
+    </div>
+
+    <div class="grid grid-4" id="kpis" style="margin-top:24px"></div>
+
+    <div class="grid grid-2 section" style="margin-top:24px">
+      <div class="card">
+        <h2>Por tipo de dato</h2>
+        <div id="por-tipo"></div>
+      </div>
+      <div class="card">
+        <h2>Qué se revisó</h2>
+        <div id="revisado"></div>
+      </div>
+    </div>
+
+    <section class="section" id="sec-columnas" hidden>
+      <div class="section-title">
+        <h2>Columnas sensibles</h2>
+        <p class="muted" style="margin:0">Qué guarda cada columna y en qué parte de las filas aparece.</p>
+      </div>
+      <div class="grid grid-3" id="columnas"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>Hallazgos</h2>
+        <p class="muted" style="margin:0">Enmascarados. Usa el ojo para ver un original con la clave de auditor.</p>
+      </div>
+      <div class="filtros">
+        <select id="filtro-riesgo" aria-label="Filtrar por riesgo"><option value="">Todos los riesgos</option></select>
+        <select id="filtro-tipo" aria-label="Filtrar por tipo"><option value="">Todos los tipos</option></select>
+        <input id="filtro-buscar" type="search" placeholder="Buscar archivo, tabla o columna" aria-label="Buscar">
+      </div>
+      <div class="tabla-wrap">
+        <table>
+          <thead><tr><th>Dónde</th><th>Tipo</th><th>Dato</th><th>Riesgo</th><th>Confianza</th><th>Contexto</th></tr></thead>
+          <tbody id="hallazgos"></tbody>
+        </table>
+      </div>
+      <div class="paginacion">
+        <span class="muted" id="info-pagina"></span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" id="anterior" type="button">← Anterior</button>
+          <button class="btn btn-sm" id="siguiente" type="button">Siguiente →</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="sec-errores" hidden>
+      <h2>No se pudo revisar</h2>
+      <ul class="muted" id="errores"></ul>
+    </section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+  <script type="module" src="/js/resultados.js"></script>
+</body>
+</html>

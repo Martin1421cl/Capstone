@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Escanear archivos · K-Secure</title>
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/css/ksecure.css">
+</head>
+<body data-pagina="archivos">
+  <header id="site-header" class="site-header"></header>
+
+  <main class="container" style="max-width:860px">
+    <h1 class="entrar">Escanear archivos</h1>
+    <p class="muted entrar">Word, Excel, PowerPoint, PDF, OpenDocument, CSV, TXT, JSON y bases SQLite (.db). Hasta 100 MB por archivo.</p>
+
+    <label class="dropzone entrar" id="dropzone">
+      <input type="file" id="selector" multiple hidden>
+      <div>
+        <div class="icon-badge" id="icono-subir"></div>
+        <h3>Arrastra tus archivos aquí</h3>
+        <p class="muted" style="margin:0">o haz clic para elegirlos</p>
+      </div>
+    </label>
+
+    <ul class="lista-archivos" id="lista" aria-live="polite"></ul>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <p class="muted" id="resumen" style="margin:0">Ningún archivo elegido</p>
+      <button class="btn btn-primary" id="escanear" disabled>Escanear</button>
+    </div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+  <script type="module" src="/js/archivos.js"></script>
+</body>
+</html>
