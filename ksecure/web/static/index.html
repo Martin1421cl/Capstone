@@ -1,1 +1,58 @@
-<!doctype html><title>K-Secure</title>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>K-Secure</title>
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/css/ksecure.css">
+</head>
+<body data-pagina="inicio">
+  <header id="site-header" class="site-header"></header>
+
+  <main class="container">
+    <section class="hero">
+      <div class="entrar">
+        <h1>Encuentra los datos sensibles <span>antes que otros</span></h1>
+        <p>K-Secure revisa tus documentos y bases de datos, detecta RUT, tarjetas, cuentas y más datos personales chilenos, y los clasifica por nivel de riesgo. Siempre enmascarados.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="/archivos.html">Escanear archivos</a>
+          <a class="btn" href="/base-datos.html">Conectar base de datos</a>
+        </div>
+      </div>
+      <div class="hero-shield"><img src="/img/escudo.webp" alt="" width="320" height="384"></div>
+    </section>
+
+    <section class="section">
+      <div class="grid grid-2" id="acciones"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-title"><h2>Cómo funciona</h2></div>
+      <div class="grid grid-3 steps" id="pasos"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>Qué detecta</h2>
+        <p class="muted" style="margin:0">Así se ven los datos en K-Secure, sin la clave de auditor.</p>
+      </div>
+      <div class="chips" id="detecta"></div>
+    </section>
+
+    <section class="section" id="recientes" hidden>
+      <div class="section-title">
+        <h2>Últimos escaneos</h2>
+        <a href="/historial.html">Ver historial →</a>
+      </div>
+      <div class="grid" id="lista-recientes"></div>
+    </section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+  <script type="module" src="/js/inicio.js"></script>
+</body>
+</html>

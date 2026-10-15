@@ -1,52 +1,64 @@
 # K-Secure
 
-Detección, clasificación y redacción de datos sensibles chilenos (RUT, celulares, tarjetas...).
-El diseño sigue a [ferret-scan](https://github.com/awslabs/ferret-scan) de AWS Labs (Apache 2.0):
-validadores con confianza 0-100 (HIGH ≥ 90, MEDIUM ≥ 60, LOW < 60) y análisis de contexto.
-K-Secure agrega la clasificación de riesgo Público / Interno / Confidencial / Restringido.
+Detección y clasificación de datos sensibles chilenos (RUT, celulares, tarjetas, cuentas...) en
+documentos y bases de datos, con una web propia. Los datos se muestran siempre enmascarados.
+
+El motor sigue a [ferret-scan](https://github.com/awslabs/ferret-scan) de AWS Labs (Apache 2.0):
+validadores con confianza 0-100 (HIGH ≥ 90, MEDIUM ≥ 60, LOW < 60), análisis de contexto y
+preprocesadores por tipo de archivo. K-Secure agrega la clasificación de riesgo
+Público / Interno / Confidencial / Restringido, el escaneo de bases de datos y la bóveda cifrada.
+
+## Cómo se protegen los datos
+
+- Las bases del cliente se abren en **solo lectura** (K-Secure solo ejecuta `SELECT`).
+- La base interna guarda cada hallazgo **enmascarado** (`**.***.198-5`) y el original **cifrado**.
+- **Cifrado híbrido**: al crear la clave de auditor se genera un par RSA; la llave privada queda
+  cifrada con esa clave. Cada escaneo cifra sus originales con una llave AES propia, guardada
+  cifrada con la llave pública. Ver un original exige la clave de auditor (5 intentos fallidos
+  bloquean 1 minuto). Detalle en `ksecure/almacenamiento/boveda.py`.
 
 ## Estructura
 
 ```
 ksecure/
-├── core/models.py        # Match, ContextInfo, ConfidenceLevel, RiskLevel
-└── validators/
-    ├── base.py             # Clase base Validator + palabras clave de contexto
-    ├── rut.py              # RUT: Módulo 11, RUT de empresa, RUT de ejemplo
-    ├── telefono.py         # Celular +56 9 y fijos por código de área
-    ├── tarjeta.py          # Luhn + marca + tarjetas de prueba Transbank
-    ├── email.py            # Personal vs. casilla de rol (contacto@...)
-    ├── cuenta_bancaria.py  # Solo con contexto bancario (BancoEstado, cta cte...)
-    ├── patente.py          # PPU nueva (BBCD·12) y antigua (AB·12·34)
-    └── secreto.py          # Claves AWS, tokens GitHub, llaves privadas
-└── preprocessors/
-    ├── __init__.py         # Router: process_file() pasa el archivo por cada preprocesador que lo acepta
-    ├── base.py             # ProcessedContent, Section, clase base Preprocessor
-    ├── texto.py            # txt, csv, json, código...: detecta UTF-8, UTF-16 y cp1252
-    ├── office.py           # docx, xlsx, pptx, odt, ods, odp: texto y metadata (zipfile + XML, como ferret-scan)
-    └── pdf.py              # Texto, formularios y metadata (pypdf)
-└── web/
-    ├── app.py              # FastAPI: /, /scan, /health (como internal/web de ferret-scan)
-    └── static/index.html   # Página para subir archivos y ver resultados
+├── core/models.py          # Match, ContextInfo, ConfidenceLevel, RiskLevel
+├── validators/             # QUÉ es sensible (uno por tipo de dato, con enmascarado propio)
+│   ├── base.py             #   Clase base: contexto, nombre de columna como pista, enmascarado
+│   ├── rut.py · telefono.py · tarjeta.py · email.py
+│   └── cuenta_bancaria.py · patente.py · secreto.py
+├── preprocessors/          # CÓMO se lee cada archivo (como ferret-scan)
+│   ├── __init__.py         #   Router: process_file()
+│   ├── texto.py            #   txt, csv, json, código... (UTF-8, UTF-16, cp1252)
+│   ├── office.py           #   docx, xlsx, pptx, odt, ods, odp: texto y metadata
+│   └── pdf.py              #   texto (tablas en una línea), formularios y metadata
+├── escaneo/                # QUÉ se escanea → ResultadoEscaneo en memoria
+│   ├── archivos.py         #   documentos y bases SQLite subidas
+│   └── bases_datos.py      #   PostgreSQL, MySQL, SQL Server, Oracle, SQLite (solo lectura)
+├── almacenamiento/         # DÓNDE se guarda
+│   ├── modelos.py · db.py  #   tablas de la base interna (SQLite local o KSECURE_DB_URL)
+│   ├── boveda.py           #   cifrado de originales con la clave de auditor
+│   └── repositorio.py      #   guardar, listar, resumir, columnas sensibles, revelar
+└── web/                    # CÓMO se muestra
+    ├── app.py              #   FastAPI: monta la API y las páginas
+    ├── api/                #   escanear.py · resultados.py · auditor.py
+    └── static/             #   index, archivos, base-datos, resultados, historial (+ css, js, img)
 tests/
 ```
 
-## Uso (web)
-
-```bash
-.venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn ksecure.web.app:app --reload
-```
-
-Abrir http://localhost:8000, subir uno o más archivos y ver los hallazgos.
-La API queda documentada en http://localhost:8000/docs (`POST /scan`, `GET /health`).
-
-## Pruebas
+## Uso
 
 ```bash
 python -m venv .venv
 .venv\Scripts\activate          # Linux/Mac: source .venv/bin/activate
 pip install -r requirements.txt
+uvicorn ksecure.web.app:app --reload
+```
+
+Abrir http://localhost:8000. La primera vez que escanees se pide crear la **clave de auditor**.
+La API queda documentada en http://localhost:8000/docs.
+
+## Pruebas
+
+```bash
 pytest -v
 ```
