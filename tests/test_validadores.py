@@ -5,6 +5,7 @@ from ksecure.validators import default_validators
 from ksecure.validators.cuenta_bancaria import CuentaBancariaValidator
 from ksecure.validators.email import EmailValidator
 from ksecure.validators.patente import PatenteValidator
+from ksecure.validators.rut import RutValidator
 from ksecure.validators.secreto import SecretoValidator
 from ksecure.validators.tarjeta import TarjetaValidator, detectar_marca, luhn
 from ksecure.validators.telefono import TelefonoValidator
@@ -209,3 +210,43 @@ def test_cada_dato_lo_detecta_solo_su_validador():
 def test_nombres_unicos():
     nombres = [v.name for v in default_validators()]
     assert len(nombres) == len(set(nombres)) == 7
+
+
+# --- Enmascarado y contexto de columna -----------------------------------
+
+@pytest.mark.parametrize("validator, texto, esperado", [
+    (RutValidator(), "15.432.198-5", "**.***.198-5"),
+    (TelefonoValidator(), "+56 9 6123 4870", "+56 9 **** 4870"),
+    (TelefonoValidator(), "41 223 4567", "+56 41 **** 4567"),
+    (EmailValidator(), "ana.rojas@gmail.com", "an****@gmail.com"),
+    (PatenteValidator(), "patente BBCD12", "**·**·12"),
+    (SecretoValidator(), "AKIAIOSFODNN7EXAMPLE", "AKIA********"),
+])
+def test_enmascarado(validator, texto, esperado):
+    [m] = scan(validator, texto)
+    assert m.masked_text == esperado
+
+
+def test_tarjeta_enmascarada_solo_ultimos_4():
+    numero = completar_luhn("453201511283036")
+    [m] = scan(TarjetaValidator(), f"tarjeta {numero}")
+    assert m.masked_text == "****-****-****-" + numero[-4:]
+
+
+def test_nombre_de_columna_cuenta_como_contexto():
+    [m] = RutValidator().validate_content("15.432.198-5", "bd", context_hint="rut_cliente")
+    assert m.context.positive_keywords == ["rut", "cliente"]
+    # Una cuenta bancaria sin contexto no se reporta; con el nombre de la columna sí.
+    assert scan(CuentaBancariaValidator(), "00123456789") == []
+    assert CuentaBancariaValidator().validate_content("00123456789", "bd", context_hint="numeroCuentaCorriente")
+
+
+def test_tarjeta_de_relleno_se_reporta_solo_con_contexto():
+    assert scan(TarjetaValidator(), "Pedido 0000 0000 0000 0000") == []
+    [m] = scan(TarjetaValidator(), "Tarjeta de crédito: 0000 0000 0000 0000  CVV 000")
+    assert m.metadata["posible_tarjeta"] and m.confidence_level == ConfidenceLevel.LOW
+
+
+def test_valor_ya_enmascarado_no_se_reporta():
+    texto = "RUT **.***.198-5, celular +56 9 **** 4870, tarjeta ****-****-****-1234"
+    assert [m for v in default_validators() for m in scan(v, texto)] == []

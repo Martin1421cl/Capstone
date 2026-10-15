@@ -36,6 +36,9 @@ class PatenteValidator(Validator):
                 "patente_normalizada": f"{normalizada[:2]}·{normalizada[2:4]}·{normalizada[4:]}",
             })
 
+    def mask(self, text, metadata):
+        return "**·**·" + metadata["patente_normalizada"][-2:]
+
     def risk_level(self, confidence, metadata):
         if ConfidenceLevel.from_score(confidence) == ConfidenceLevel.LOW:
             return RiskLevel.INTERNO

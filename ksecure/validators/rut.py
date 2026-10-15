@@ -71,6 +71,11 @@ class RutValidator(Validator):
             confidence -= 40
         return confidence, checks
 
+    def mask(self, text, metadata):
+        """Solo los últimos 3 dígitos y el DV: **.***.678-5."""
+        cuerpo, dv = metadata["rut_normalizado"].split("-")
+        return f"**.***.{cuerpo[-3:]}-{dv}"
+
     def risk_level(self, confidence, metadata):
         # El RUT de una empresa sale en cada factura: no identifica a una persona.
         if ConfidenceLevel.from_score(confidence) == ConfidenceLevel.LOW or metadata["persona_juridica"]:

@@ -31,6 +31,11 @@ class EmailValidator(Validator):
                 "dominio_de_ejemplo": de_ejemplo,
             })
 
+    def mask(self, text, metadata):
+        """an****@gmail.com: el dominio se deja visible porque dice de qué organización es."""
+        usuario = text.split("@", 1)[0]
+        return f"{usuario[:2]}****@{metadata['dominio']}"
+
     def risk_level(self, confidence, metadata):
         if ConfidenceLevel.from_score(confidence) == ConfidenceLevel.LOW:
             return RiskLevel.INTERNO

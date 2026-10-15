@@ -38,6 +38,26 @@ class Candidate:
     end: int
     confidence: float
     metadata: dict = field(default_factory=dict)
+    # Solo se reporta si hay una palabra clave positiva cerca (ej. una "posible tarjeta" sin Luhn).
+    requires_context: bool = False
+
+
+def split_identifier(name: str) -> str:
+    """Nombre de columna a palabras: "rut_cliente" / "rutCliente" -> "rut cliente"."""
+    return re.sub(r"[_\-.]+|(?<=[a-z])(?=[A-Z])", " ", name)
+
+
+def mask_keep_last(text: str, visible: int = 4) -> str:
+    """Oculta todos los caracteres alfanuméricos salvo los últimos `visible`, conservando el formato."""
+    total = sum(c.isalnum() for c in text)
+    seen, out = 0, []
+    for c in text:
+        if c.isalnum():
+            seen += 1
+            out.append(c if seen > total - visible else "*")
+        else:
+            out.append(c)
+    return "".join(out)
 
 
 class Validator(ABC):
@@ -57,12 +77,18 @@ class Validator(ABC):
     def risk_level(self, confidence: float, metadata: dict) -> RiskLevel:
         """Clasificación de riesgo según la confianza final."""
 
-    def validate_content(self, content: str, filename: str) -> list[Match]:
+    def mask(self, text: str, metadata: dict) -> str:
+        """Versión enmascarada del dato. Cada validador puede dar un formato más útil."""
+        return mask_keep_last(text)
+
+    def validate_content(self, content: str, filename: str, context_hint: str = "") -> list[Match]:
+        """Busca el dato en content. context_hint es contexto extra, como el nombre de la columna en una BD."""
+        hint = split_identifier(context_hint)
         matches = []
         for line_number, line in enumerate(content.splitlines(), start=1):
             for c in self.find_candidates(line):
-                context = self.extract_context(line, c.start, c.end)
-                if self.requires_context and not context.positive_keywords:
+                context = self.extract_context(line, c.start, c.end, hint)
+                if (self.requires_context or c.requires_context) and not context.positive_keywords:
                     continue
                 context.confidence_impact = (
                     min(_POSITIVO * len(context.positive_keywords), _POSITIVO_MAX)
@@ -81,13 +107,14 @@ class Validator(ABC):
                     start_column=c.start + 1,
                     end_column=c.end + 1,
                     metadata=c.metadata,
+                    masked_text=self.mask(line[c.start:c.end], c.metadata),
                 ))
         return matches
 
-    def extract_context(self, line: str, start: int, end: int) -> ContextInfo:
+    def extract_context(self, line: str, start: int, end: int, hint: str = "") -> ContextInfo:
         before = line[max(0, start - self.context_window):start]
         after = line[end:end + self.context_window]
-        nearby = before + " " + after
+        nearby = f"{hint} {before} {after}"
         return ContextInfo(
             before_text=before,
             after_text=after,
