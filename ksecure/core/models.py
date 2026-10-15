@@ -59,6 +59,8 @@ class Match:
     start_column: int = 0
     end_column: int = 0
     metadata: dict = field(default_factory=dict)
+    # El dato con la mayor parte oculta (ej. **.***.678-5): lo único que se muestra sin clave.
+    masked_text: str = ""
 
     @property
     def confidence_level(self) -> ConfidenceLevel:

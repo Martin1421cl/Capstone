@@ -29,6 +29,10 @@ class SecretoValidator(Validator):
                     "secreto_de_ejemplo": de_ejemplo,
                 })
 
+    def mask(self, text, metadata):
+        """Solo los primeros 4 caracteres, que dicen qué tipo de clave es (AKIA, ghp_...)."""
+        return text[:4] + "*" * 8
+
     def risk_level(self, confidence, metadata):
         if ConfidenceLevel.from_score(confidence) == ConfidenceLevel.LOW:
             return RiskLevel.CONFIDENCIAL

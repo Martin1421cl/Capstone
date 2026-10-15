@@ -71,7 +71,7 @@ def _agrupacion_valida(raw: str) -> bool:
 class TarjetaValidator(Validator):
     name = "TARJETA_PAGO"
     positive_keywords = (
-        "tarjeta", "card", "visa", "mastercard", "amex", "redcompra", "webpay", "cvv", "cvc",
+        "tarjeta", "card", "credito", "debito", "visa", "mastercard", "amex", "redcompra", "webpay", "cvv", "cvc",
         "vencimiento", "venc", "pago", "titular", "cuotas",
     )
     negative_keywords = (
@@ -83,10 +83,17 @@ class TarjetaValidator(Validator):
         for m in _TARJETA_PATTERN.finditer(line):
             raw = m.group(0)
             numero = re.sub(r"[ -]", "", raw)
-            if not _agrupacion_valida(raw) or not luhn(numero):
+            if not _agrupacion_valida(raw):
                 continue
-            marca = detectar_marca(numero)
+            marca = detectar_marca(numero) if luhn(numero) else None
             if marca is None:
+                # Sin Luhn o sin marca (ej. "0000 0000 0000 0000" de relleno): se reporta
+                # igual como posible tarjeta, pero solo si alrededor se habla de tarjetas.
+                if len(numero) == 16:
+                    yield Candidate(m.start(), m.end(), 35, {
+                        "marca": "desconocida", "tipo": self._tipo("", line),
+                        "tarjeta_de_prueba": True, "posible_tarjeta": True,
+                    }, requires_context=True)
                 continue
             de_prueba = numero in _TARJETAS_DE_PRUEBA
             yield Candidate(m.start(), m.end(), 80 - (40 if de_prueba else 0), {
@@ -96,6 +103,10 @@ class TarjetaValidator(Validator):
                 # Truncado PCI-DSS: solo BIN y últimos 4 dígitos.
                 "numero_truncado": f"{numero[:6]}{'*' * (len(numero) - 10)}{numero[-4:]}",
             })
+
+    def mask(self, text, metadata):
+        """Solo los últimos 4 dígitos, como exige PCI-DSS para mostrar un PAN."""
+        return "****-****-****-" + re.sub(r"\D", "", text)[-4:]
 
     @staticmethod
     def _tipo(marca: str, line: str) -> str:

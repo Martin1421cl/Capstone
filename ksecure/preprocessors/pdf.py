@@ -24,7 +24,8 @@ class PdfTextPreprocessor(Preprocessor):
 
     def extract(self, path: str) -> tuple[str, dict]:
         reader = _open(path)
-        pages = [p.extract_text() or "" for p in reader.pages[:MAX_PAGES]]
+        # Modo "layout": cada fila de una tabla queda en una línea, así el validador ve su contexto.
+        pages = [p.extract_text(extraction_mode="layout") or "" for p in reader.pages[:MAX_PAGES]]
         text = "\n--- PAGE BREAK ---\n".join(pages)
         fields = reader.get_fields() or {}
         form = "".join(f"Name: {name} Value: {f.get('/V')}\n"

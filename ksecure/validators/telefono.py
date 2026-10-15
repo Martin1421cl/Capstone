@@ -55,6 +55,11 @@ class TelefonoValidator(Validator):
                 "con_prefijo_pais": bool(m.group(1)),
             })
 
+    def mask(self, text, metadata):
+        """+56 9 **** 4870: se ve el tipo y los últimos 4 dígitos."""
+        pais, area, *_, final = metadata["numero_normalizado"].split()
+        return f"{pais} {area} **** {final}"
+
     def risk_level(self, confidence, metadata):
         if ConfidenceLevel.from_score(confidence) == ConfidenceLevel.LOW:
             return RiskLevel.INTERNO
