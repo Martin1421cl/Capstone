@@ -166,3 +166,34 @@ def test_pdf_texto_y_metadata(tmp_path):
     assert "RUT_Cliente: 16.543.210-K" in r.text
     assert ruts(r) == ["15432198-5", "16543210-K"]
     assert r.page_count == 1
+
+
+# --- Planillas como tablas ----------------------------------------------------
+
+from ksecure.preprocessors.tablas import leer_tablas
+
+
+def test_csv_como_tabla_con_separador_detectado(tmp_path):
+    p = tmp_path / "c.csv"
+    p.write_bytes("\n\nrut_comprador;nombre;;nombre\n15379476-6;Ana;x;Ana R.\n".encode("cp1252"))
+    [h] = leer_tablas(str(p))
+    assert h.encabezados == ["rut_comprador", "nombre", "columna_3", "nombre_2"]
+    assert h.filas == [(4, ["15379476-6", "Ana", "x", "Ana R."])]
+
+
+def test_xlsx_como_tabla_columnas_alineadas_y_nombre_de_hoja(tmp_path):
+    ns = 'xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+    r = 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"'
+    sheet = (f'<worksheet {ns}><sheetData>'
+             '<row r="1"><c r="A1" t="inlineStr"><is><t>rut</t></is></c><c r="C1" t="inlineStr"><is><t>fono</t></is></c></row>'
+             '<row r="2"><c r="A2" t="inlineStr"><is><t>15.432.198-5</t></is></c><c r="C2"><v>961234870</v></c></row>'
+             '</sheetData></worksheet>')
+    p = make_zip(tmp_path / "a.xlsx", {
+        "xl/workbook.xml": f'<workbook {ns} {r}><sheets><sheet name="Clientes" r:id="rId1"/></sheets></workbook>',
+        "xl/_rels/workbook.xml.rels": '<Relationships><Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>',
+        "xl/worksheets/sheet1.xml": sheet,
+    })
+    [h] = leer_tablas(p)
+    assert h.nombre == "Clientes"
+    assert h.encabezados == ["rut", "columna_2", "fono"]
+    assert h.filas == [(2, ["15.432.198-5", "", "961234870"])]

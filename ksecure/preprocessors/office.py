@@ -117,19 +117,43 @@ def _docx(pkg: _Package) -> str:
 
 # --- Excel ------------------------------------------------------------------
 
-def _xlsx(pkg: _Package) -> str:
+def _sheet_names(pkg: _Package) -> dict[str, str]:
+    """'sheet1.xml' -> 'Clientes': el nombre que el usuario ve en la pestaña de Excel."""
+    workbook, rels = pkg.xml("xl/workbook.xml"), pkg.xml("xl/_rels/workbook.xml.rels")
+    if workbook is None or rels is None:
+        return {}
+    targets = {r.get("Id"): r.get("Target", "").rsplit("/", 1)[-1] for r in rels}
+    names = {}
+    for sheet in (s for s in workbook.iter() if _local(s.tag) == "sheet"):
+        rid = next((v for k, v in sheet.attrib.items() if _local(k) == "id"), None)
+        if rid in targets:
+            names[targets[rid].lower()] = sheet.get("name", "")
+    return names
+
+
+def _column_index(ref: str) -> int:
+    """'C7' -> 2 (columna base 0)."""
+    n = 0
+    for ch in re.match(r"[A-Z]*", ref.upper()).group(0):
+        n = n * 26 + ord(ch) - 64
+    return n - 1
+
+
+def xlsx_sheets(pkg: _Package) -> list[tuple[str, list[list[str]]]]:
+    """Cada hoja como (nombre, filas), con las celdas vacías en su lugar para que las columnas calcen."""
     shared = []
     if (sst := pkg.xml("xl/sharedStrings.xml")) is not None:
         shared = ["".join(t.text or "" for t in si.iter() if _local(t.tag) == "t")
                   for si in sst if _local(si.tag) == "si"]
-    parts = []
-    for name in pkg.matching("xl/worksheets/sheet"):
-        sheet = pkg.xml(name)
+    names = _sheet_names(pkg)
+    sheets = []
+    for part in pkg.matching("xl/worksheets/sheet"):
+        sheet = pkg.xml(part)
         if sheet is None:
             continue
         rows = []
         for row in (r for r in sheet.iter() if _local(r.tag) == "row"):
-            cells = []
+            cells: list[str] = []
             for c in (c for c in row if _local(c.tag) == "c"):
                 kind = c.get("t")
                 v = next((e.text for e in c if _local(e.tag) == "v"), None)
@@ -140,12 +164,20 @@ def _xlsx(pkg: _Package) -> str:
                     value = "".join(t.text or "" for t in c.iter() if _local(t.tag) == "t")
                 else:
                     value = v or ""
-                if value:
-                    cells.append(value)
-            if cells:
-                rows.append("\t".join(cells))
-        label = name.rsplit("/", 1)[-1].removesuffix(".xml")
-        parts.append(f"--- {label} ---\n" + "\n".join(rows) + "\n\n")
+                col = _column_index(c.get("r", "")) if c.get("r") else len(cells)
+                cells.extend([""] * (col - len(cells) + 1))
+                cells[col] = value
+            rows.append(cells)
+        file = part.rsplit("/", 1)[-1]
+        sheets.append((names.get(file.lower()) or file.removesuffix(".xml"), rows))
+    return sheets
+
+
+def _xlsx(pkg: _Package) -> str:
+    parts = []
+    for label, rows in xlsx_sheets(pkg):
+        lines = ["\t".join(c for c in row if c) for row in rows]
+        parts.append(f"--- {label} ---\n" + "\n".join(l for l in lines if l) + "\n\n")
     return _join_capped(parts)
 
 
