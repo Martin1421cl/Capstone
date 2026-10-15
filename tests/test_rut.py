@@ -80,3 +80,11 @@ def test_linea_y_columnas():
 def test_palabra_completa_y_sin_tildes():
     assert find_keywords("Dirección: Ruta 68", ("rut",)) == []
     assert find_keywords("Cédula de identidad", ("cedula",)) == ["cedula"]
+
+
+def test_rut_corto_solo_con_contexto():
+    assert scan("Código 2004-4") == []
+    assert scan("Fecha 2024-10-1") == []
+    [m] = RutValidator().validate_content("2004-4", "x", context_hint="rut_comprador")
+    assert m.metadata["rut_corto"] and m.confidence_level == ConfidenceLevel.LOW
+    assert [x.metadata["rut_normalizado"] for x in scan("RUT: 6-K")] == ["6-K"]

@@ -12,7 +12,11 @@ from ksecure.core.models import ConfidenceLevel, RiskLevel
 from ksecure.validators.base import Candidate, Validator
 
 # Word suele autocorregir "-" a "–", así que se aceptan ambos guiones.
-_RUT_PATTERN = re.compile(r"(?<![\d.])(\d{1,2}(?:\.\d{3}){2}|\d{7,8})\s?[-‐–]\s?([0-9kK])(?!\w)")
+_RUT_PATTERN = re.compile(r"(?<![\d.\-‐–])(\d{1,2}(?:\.\d{3}){2}|\d{1,3}\.\d{3}|\d{1,8})\s?[-‐–]\s?([0-9kK])(?!\w)")
+
+# Bajo 1 millón también hay RUT (antiguos o internos, ej. "2004-4"), pero "número-guion-dígito"
+# es demasiado común: solo se reportan si alrededor se habla de RUT (o la columna se llama rut_...).
+_RUT_LARGO_DESDE = 1_000_000
 
 # Desde 50 millones se asignan a personas jurídicas (empresas).
 _EMPRESA_DESDE = 50_000_000
@@ -38,7 +42,7 @@ class RutValidator(Validator):
     positive_keywords = (
         "rut", "run", "cedula", "identidad", "identificacion", "cliente", "paciente",
         "titular", "contribuyente", "empleado", "trabajador", "alumno", "beneficiario",
-        "rol unico tributario",
+        "rol unico tributario", "comprador", "vendedor", "proveedor", "usuario", "socio",
     )
     negative_keywords = (
         "factura", "folio", "boleta", "guia", "ticket", "orden de compra", "pedido",
@@ -48,14 +52,18 @@ class RutValidator(Validator):
     def find_candidates(self, line):
         for m in _RUT_PATTERN.finditer(line):
             cuerpo, dv = m.group(1).replace(".", ""), m.group(2).upper()
-            if int(cuerpo) < 1_000_000:
+            if int(cuerpo) == 0:
                 continue
+            corto = int(cuerpo) < _RUT_LARGO_DESDE
             confidence, checks = self.calculate_confidence(m.group(0), cuerpo, dv)
+            if corto:
+                confidence = min(confidence, 35)  # +20 máx. de contexto: queda en LOW, puede ser cualquier código
             yield Candidate(m.start(), m.end(), confidence, {
                 "rut_normalizado": f"{cuerpo}-{dv}",
                 "persona_juridica": int(cuerpo) >= _EMPRESA_DESDE,
+                "rut_corto": corto,
                 "checks": checks,
-            })
+            }, requires_context=corto)
 
     def calculate_confidence(self, rut_text: str, cuerpo: str, dv: str) -> tuple[float, dict[str, bool]]:
         """Confianza 0-100 sin contexto, y los chequeos que la explican."""

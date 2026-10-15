@@ -53,7 +53,7 @@ def test_escaneo_de_archivos_enmascarado_y_revelado(con_clave):
     assert detalle["errores"] == ["nada.bin: tipo de archivo no soportado"]
 
     [h] = c.get(f"/api/escaneos/{escaneo_id}/hallazgos").json()["items"]
-    assert h["valor"] == "**.***.198-5" and h["posicion"] == "línea 2"
+    assert h["valor"] == "**.***.198-5" and h["posicion"] == "fila 2" and h["columna"] == "rut"
     assert "15.432.198" not in str(h)  # el original no sale sin clave
 
     assert c.post(f"/api/hallazgos/{h['id']}/revelar", json={"clave": "mala-clave"}).status_code == 403

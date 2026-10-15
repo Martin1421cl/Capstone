@@ -11,7 +11,8 @@ from pathlib import Path
 from sqlalchemy import MetaData, Table, create_engine, event, inspect, select
 from sqlalchemy.engine import URL, Engine
 
-from ksecure.escaneo.resultado import Hallazgo, ResultadoEscaneo
+from ksecure.escaneo.celdas import escanear_filas
+from ksecure.escaneo.resultado import ResultadoEscaneo
 from ksecure.validators import default_validators
 
 MOTORES = {
@@ -129,17 +130,8 @@ def escanear_bd(engine: Engine, descripcion: str, max_filas: int = 1000,
             clave = [c.name for c in tabla.primary_key.columns]
             with engine.connect() as conn:
                 filas = conn.execute(select(tabla).limit(max_filas)).mappings()
-                n = 0
-                for n, fila in enumerate(filas, start=1):
-                    for columna, valor in fila.items():
-                        if valor is None or isinstance(valor, (bytes, bytearray, memoryview)):
-                            continue
-                        texto = str(valor).strip()
-                        for v in validators:
-                            for m in v.validate_content(texto, nombre, context_hint=columna):
-                                resultado.hallazgos.append(
-                                    Hallazgo(m, nombre, _posicion(fila, clave, n), columna))
-            resultado.filas_por_fuente[nombre] = n
+                escanear_filas(resultado, nombre,
+                               ((_posicion(f, clave, n), f) for n, f in enumerate(filas, start=1)), validators)
         except Exception as e:  # una tabla rara (permisos, tipos exóticos) no detiene el resto
             resultado.errores.append(f"{nombre}: {str(e).splitlines()[0][:200]}")
     return resultado

@@ -29,10 +29,12 @@ ksecure/
 ├── preprocessors/          # CÓMO se lee cada archivo (como ferret-scan)
 │   ├── __init__.py         #   Router: process_file()
 │   ├── texto.py            #   txt, csv, json, código... (UTF-8, UTF-16, cp1252)
+│   ├── tablas.py           #   csv, xlsx, xls como tablas (encabezados + filas)
 │   ├── office.py           #   docx, xlsx, pptx, odt, ods, odp: texto y metadata
 │   └── pdf.py              #   texto (tablas en una línea), formularios y metadata
 ├── escaneo/                # QUÉ se escanea → ResultadoEscaneo en memoria
-│   ├── archivos.py         #   documentos y bases SQLite subidas
+│   ├── archivos.py         #   documentos, planillas (por columna) y bases SQLite subidas
+│   ├── celdas.py           #   escaneo celda a celda con el nombre de la columna como contexto
 │   └── bases_datos.py      #   PostgreSQL, MySQL, SQL Server, Oracle, SQLite (solo lectura)
 ├── almacenamiento/         # DÓNDE se guarda
 │   ├── modelos.py · db.py  #   tablas de la base interna (SQLite local o KSECURE_DB_URL)
