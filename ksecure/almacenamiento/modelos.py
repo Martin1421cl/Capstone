@@ -65,6 +65,7 @@ class Regla(Base):
     nombre: Mapped[str] = mapped_column(String(50), unique=True)   # ej. PASAPORTE; es el "tipo" del hallazgo
     descripcion: Mapped[str] = mapped_column(String(300), default="")
     patron: Mapped[str] = mapped_column(String(500))
+    ejemplos: Mapped[list | None] = mapped_column(type_=JSON, default=list)  # con qué se armó el patrón
     validacion: Mapped[str] = mapped_column(String(20), default="ninguna")
     palabras_positivas: Mapped[list] = mapped_column(type_=JSON, default=list)
     palabras_negativas: Mapped[list] = mapped_column(type_=JSON, default=list)

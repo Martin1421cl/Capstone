@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ksecure.almacenamiento import reglas
+from ksecure.validators.patron import generar_patron
 from ksecure.validators.regla import ReglaValidator
 from ksecure.web.api.dependencias import get_db
 
@@ -17,6 +18,7 @@ class ReglaIn(BaseModel):
     nombre: str
     descripcion: str = ""
     patron: str
+    ejemplos: list[str] = []
     validacion: str = "ninguna"
     palabras_positivas: list[str] = []
     palabras_negativas: list[str] = []
@@ -78,6 +80,20 @@ def actualizar(regla_id: int, datos: ReglaIn, db: Session = Depends(get_db)):
 def borrar(regla_id: int, db: Session = Depends(get_db)):
     if not reglas.borrar(db, regla_id):
         raise HTTPException(404, "Regla no encontrada")
+
+
+class EjemplosIn(BaseModel):
+    ejemplos: list[str]
+
+
+@router.post("/patron")
+def patron_desde_ejemplos(datos: EjemplosIn):
+    """Arma el patrón a partir de ejemplos del dato, para no tener que escribir expresiones regulares."""
+    try:
+        patron, descripcion = generar_patron(datos.ejemplos)
+    except ValueError as e:
+        raise _400(e) from e
+    return {"patron": patron, "descripcion": descripcion}
 
 
 @router.post("/probar")

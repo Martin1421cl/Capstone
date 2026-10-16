@@ -19,10 +19,11 @@ Público / Interno / Confidencial / Restringido, el escaneo de bases de datos y 
 
 ## Reglas sin programar
 
-En la página **Reglas** se crean detectores nuevos (pasaporte, ficha clínica, N° de socio...)
-con un patrón, una validación opcional (Módulo 11 o Luhn), palabras de contexto, riesgo,
-confianza y cuántos caracteres dejar visibles. Se prueban en vivo con un texto de ejemplo antes
-de guardarlas. Los validadores incluidos se pueden apagar o sumarles palabras de contexto.
+En la página **Reglas** un asistente de 3 pasos crea detectores nuevos (pasaporte, ficha clínica,
+N° de socio...) sin saber expresiones regulares: basta escribir un par de **ejemplos del dato** y
+K-Secure arma el patrón (`validators/patron.py`: "FC-123456" → «FC» + guion + 6 números).
+Riesgo, certeza y enmascarado se eligen en palabras, y la regla se prueba en vivo antes de guardarla.
+Los validadores incluidos se pueden apagar o sumarles palabras de contexto.
 
 ## Estructura
 
@@ -33,7 +34,8 @@ ksecure/
 │   ├── base.py             #   Clase base: contexto, nombre de columna como pista, enmascarado
 │   ├── rut.py · telefono.py · tarjeta.py · email.py
 │   ├── cuenta_bancaria.py · patente.py · secreto.py
-│   └── regla.py            #   Validador genérico para las reglas creadas en pantalla
+│   ├── regla.py            #   Validador genérico para las reglas creadas en pantalla
+│   └── patron.py           #   Arma el patrón de una regla a partir de ejemplos del dato
 ├── preprocessors/          # CÓMO se lee cada archivo (como ferret-scan)
 │   ├── __init__.py         #   Router: process_file()
 │   ├── texto.py            #   txt, csv, json, código... (UTF-8, UTF-16, cp1252)

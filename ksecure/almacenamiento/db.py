@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -30,7 +30,27 @@ def crear_sesiones(url: str | None = None) -> sessionmaker:
     else:
         engine = create_engine(url, pool_pre_ping=True)
     Base.metadata.create_all(engine)
+    _agregar_columnas_nuevas(engine)
     return sessionmaker(engine, expire_on_commit=False)
+
+
+def _agregar_columnas_nuevas(engine: Engine):
+    """create_all crea tablas nuevas pero no agrega columnas a las que ya existen.
+
+    Esto suma las columnas que falten (siempre como opcionales), así una base de una
+    versión anterior se actualiza sola y no se pierden escaneos ni reglas.
+    shortcut: solo agrega columnas; si algún día se renombra o borra una, usar Alembic.
+    """
+    existentes = inspect(engine)
+    with engine.begin() as conn:
+        for tabla in Base.metadata.sorted_tables:
+            if not existentes.has_table(tabla.name):
+                continue
+            actuales = {c["name"] for c in existentes.get_columns(tabla.name)}
+            for col in tabla.columns:
+                if col.name not in actuales:
+                    tipo = col.type.compile(engine.dialect)
+                    conn.execute(text(f'ALTER TABLE {tabla.name} ADD COLUMN "{col.name}" {tipo}'))
 
 
 def _sqlite_foreign_keys(conn, _):
