@@ -45,6 +45,7 @@ class Hallazgo(Base):
     fuente: Mapped[str] = mapped_column(String(300))           # archivo o tabla
     columna: Mapped[str | None] = mapped_column(String(300))   # solo bases de datos
     posicion: Mapped[str] = mapped_column(String(300))         # "línea 4" / "fila id=7"
+    numero: Mapped[int | None] = mapped_column(Integer)          # la línea o fila, para ordenar
     tipo: Mapped[str] = mapped_column(String(50), index=True)
     riesgo: Mapped[str] = mapped_column(String(20), index=True)
     confianza: Mapped[int] = mapped_column(Integer)

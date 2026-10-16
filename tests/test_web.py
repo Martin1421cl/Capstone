@@ -103,3 +103,22 @@ def test_bd_servidor_inalcanzable_da_error_claro(client):
     res = client.post("/api/bd/probar", json={
         "motor": "postgresql", "host": "127.0.0.1", "puerto": 1, "base": "x", "usuario": "u", "clave": "c"})
     assert res.status_code == 400 and res.json()["detail"].startswith("No se pudo conectar")
+
+
+def test_ordenar_hallazgos(con_clave):
+    texto = ("correo ana.rojas@gmail.com\n"           # EMAIL, Confidencial
+             "fijo 41 223 4567\n"                     # TELEFONO, Interno
+             "tarjeta 4532 0151 1283 0366\n"          # TARJETA_PAGO, Restringido
+             "RUT: 15.432.198-5\n")                   # RUT, Restringido
+    escaneo_id = subir(con_clave, ("a.txt", texto.encode())).json()["escaneo_id"]
+    url = f"/api/escaneos/{escaneo_id}/hallazgos"
+    tipos = lambda q="": [h["tipo"] for h in con_clave.get(url + q).json()["items"]]
+
+    # Por defecto, primero el riesgo más alto; a igual riesgo, el RUT antes que la tarjeta.
+    assert tipos() == ["RUT", "TARJETA_PAGO", "EMAIL", "TELEFONO"]
+    assert tipos("?orden=riesgo&invertir=true") == ["TELEFONO", "EMAIL", "RUT", "TARJETA_PAGO"]
+    assert tipos("?orden=tipo") == ["RUT", "TARJETA_PAGO", "TELEFONO", "EMAIL"]
+    confianzas = [h["confianza"] for h in con_clave.get(url + "?orden=confianza").json()["items"]]
+    assert confianzas == sorted(confianzas, reverse=True)
+    assert tipos("?orden=ubicacion") == ["EMAIL", "TELEFONO", "TARJETA_PAGO", "RUT"]  # orden del archivo
+    assert con_clave.get(url + "?orden=inventado").status_code == 422

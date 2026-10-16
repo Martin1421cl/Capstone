@@ -4,7 +4,14 @@ import { aviso, contarHasta, el, formatoFecha, icono, revelarHallazgo } from "./
 const $ = (id) => document.getElementById(id);
 const id = new URLSearchParams(location.search).get("id");
 const SEGUNDOS_VISIBLE = 20;
-const filtros = { riesgo: "", tipo: "", buscar: "", pagina: 1 };
+const filtros = { riesgo: "", tipo: "", buscar: "", pagina: 1, orden: "riesgo", invertir: false };
+// Cómo se lee cada orden, normal e invertido.
+const ORDENES = {
+  riesgo: ["Riesgo", "mayor primero", "menor primero"],
+  tipo: ["Tipo", "RUT, tarjetas, cuentas…", "al revés"],
+  confianza: ["Confianza", "mayor primero", "menor primero"],
+  ubicacion: ["Dónde", "en orden del archivo", "al revés"],
+};
 
 let detalle;
 try {
@@ -123,7 +130,32 @@ function celdaValor(h) {
   return celda;
 }
 
+// Encabezados ordenables: un clic ordena por esa columna, otro clic invierte el orden.
+for (const th of document.querySelectorAll("th[data-orden]")) {
+  const boton = el("button", { type: "button", class: "orden" }, th.textContent, el("span", { class: "flecha", "aria-hidden": "true" }));
+  boton.addEventListener("click", () => {
+    filtros.invertir = filtros.orden === th.dataset.orden ? !filtros.invertir : false;
+    filtros.orden = th.dataset.orden;
+    filtros.pagina = 1;
+    recargar();
+  });
+  th.replaceChildren(boton);
+}
+
+function marcarOrden() {
+  for (const th of document.querySelectorAll("th[data-orden]")) {
+    const activo = th.dataset.orden === filtros.orden;
+    th.classList.toggle("activo", activo);
+    th.querySelector(".flecha").textContent = activo ? (filtros.invertir ? "↑" : "↓") : "↕";
+    if (activo) th.setAttribute("aria-sort", filtros.invertir ? "descending" : "ascending");
+    else th.removeAttribute("aria-sort");
+  }
+  const [nombre, normal, invertido] = ORDENES[filtros.orden];
+  $("info-orden").textContent = `Ordenado por ${nombre.toLowerCase()}: ${filtros.invertir ? invertido : normal}`;
+}
+
 async function recargar() {
+  marcarOrden();
   const q = new URLSearchParams({ ...filtros, por_pagina: 50 });
   const datos = await api(`/escaneos/${id}/hallazgos?${q}`);
   $("hallazgos").replaceChildren(...(datos.items.length
