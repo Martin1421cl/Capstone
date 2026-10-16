@@ -32,6 +32,7 @@ const ICONOS = {
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
   lapiz: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/>',
   mas: '<path d="M12 5v14M5 12h14"/>',
+  check: '<path d="M5 12l5 5 9-10"/>',
   reglas: '<path d="M4 6h10M4 12h16M4 18h7"/><circle cx="17" cy="6" r="2"/><circle cx="14" cy="18" r="2"/>',
 };
 

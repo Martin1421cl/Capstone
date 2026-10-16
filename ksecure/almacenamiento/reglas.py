@@ -10,6 +10,7 @@ from ksecure.almacenamiento.modelos import AjusteValidador, Regla
 from ksecure.core.models import RiskLevel
 from ksecure.validators import INCLUIDOS
 from ksecure.validators.base import Validator
+from ksecure.validators.patron import MAX_EJEMPLOS, MAX_LARGO
 from ksecure.validators.regla import VALIDACIONES, ParametrosRegla, ReglaValidator
 
 _NOMBRE = re.compile(r"^[A-Z][A-Z0-9_]{1,49}$")
@@ -54,7 +55,7 @@ def parametros(datos: dict) -> ParametrosRegla:
 
 def _a_dict(r: Regla) -> dict:
     return {
-        "id": r.id, "nombre": r.nombre, "descripcion": r.descripcion, "patron": r.patron,
+        "id": r.id, "nombre": r.nombre, "descripcion": r.descripcion, "patron": r.patron, "ejemplos": r.ejemplos or [],
         "validacion": r.validacion, "palabras_positivas": r.palabras_positivas,
         "palabras_negativas": r.palabras_negativas, "requiere_contexto": r.requiere_contexto,
         "confianza": r.confianza, "riesgo": r.riesgo, "visibles": r.visibles, "activa": r.activa,
@@ -101,6 +102,7 @@ def guardar(db: Session, datos: dict, regla_id: int | None = None) -> dict:
     r.palabras_positivas, r.palabras_negativas = list(p.palabras_positivas), list(p.palabras_negativas)
     r.requiere_contexto, r.confianza, r.riesgo, r.visibles = p.requiere_contexto, p.confianza, p.riesgo.value, p.visibles
     r.descripcion = datos.get("descripcion", "")[:300]
+    r.ejemplos = [e.strip()[:MAX_LARGO] for e in datos.get("ejemplos") or [] if e.strip()][:MAX_EJEMPLOS]
     r.activa = bool(datos.get("activa", True))
     db.add(r)
     db.commit()
