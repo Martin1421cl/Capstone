@@ -408,3 +408,14 @@ details.avanzado { margin-top: 16px; border: 1px solid var(--border); border-rad
 details.avanzado summary { cursor: pointer; padding: 12px 0; color: var(--muted); font-size: .9rem; }
 details.avanzado[open] { padding-bottom: 14px; }
 .vista-previa { font-family: ui-monospace, monospace; color: var(--cyan); font-size: 1.05rem; }
+
+/* Encabezados ordenables de la tabla de hallazgos */
+th button.orden {
+  all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; padding: 2px 4px; margin: -2px -4px;
+  transition: color .2s, background .2s;
+}
+th button.orden:hover { color: var(--text); background: var(--cyan-soft); }
+th button.orden:focus-visible { outline: 2px solid var(--cyan); }
+th .flecha { font-size: .9rem; opacity: .45; transition: transform .2s var(--ease); }
+th.activo { color: var(--cyan); }
+th.activo .flecha { opacity: 1; }

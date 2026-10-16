@@ -12,12 +12,14 @@ class Hallazgo:
     fuente:   el archivo o la tabla.
     columna:  la columna (solo en bases de datos).
     posicion: "línea 12" en un archivo, "fila id=5" en una tabla.
+    numero:   la misma línea o fila como número.
     """
 
     match: Match
     fuente: str
     posicion: str
     columna: str | None = None
+    numero: int = 0
 
 
 @dataclass

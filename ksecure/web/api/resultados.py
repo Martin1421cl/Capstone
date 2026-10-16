@@ -1,5 +1,7 @@
 """Endpoints para ver el historial y los resultados (siempre enmascarados)."""
 
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
@@ -24,8 +26,10 @@ def detalle(escaneo_id: int, db: Session = Depends(get_db)):
 @router.get("/{escaneo_id}/hallazgos")
 def hallazgos(escaneo_id: int, riesgo: str = "", tipo: str = "", buscar: str = "",
               pagina: int = Query(1, ge=1), por_pagina: int = Query(50, ge=1, le=200),
+              orden: Literal["riesgo", "tipo", "confianza", "ubicacion"] = "riesgo", invertir: bool = False,
               db: Session = Depends(get_db)):
-    return repositorio.hallazgos(db, escaneo_id, riesgo, tipo, buscar, pagina, por_pagina)
+    """Hallazgos enmascarados, filtrados y ordenados. Por defecto: primero los de mayor riesgo."""
+    return repositorio.hallazgos(db, escaneo_id, riesgo, tipo, buscar, pagina, por_pagina, orden, invertir)
 
 
 @router.delete("/{escaneo_id}", status_code=204)

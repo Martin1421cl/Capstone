@@ -1,6 +1,6 @@
 """Consultas sobre la base interna: guardar escaneos y leer sus resultados."""
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from ksecure.almacenamiento import boveda
@@ -11,6 +11,31 @@ from ksecure.escaneo.resultado import ResultadoEscaneo
 # De mayor a menor riesgo, para ordenar y para quedarse con el peor de una columna.
 ORDEN_RIESGO = [RiskLevel.RESTRINGIDO.value, RiskLevel.CONFIDENCIAL.value,
                 RiskLevel.INTERNO.value, RiskLevel.PUBLICO.value]
+# Al ordenar por tipo: primero lo que identifica a una persona o permite un fraude. Las reglas personalizadas van al final.
+ORDEN_TIPOS = ["RUT", "TARJETA_PAGO", "CUENTA_BANCARIA", "SECRETO", "TELEFONO", "EMAIL", "PATENTE"]
+
+
+def _lugar_en(columna, valores: list[str]):
+    """Posición del valor en la lista, para ordenar en SQL con un orden propio (no alfabético)."""
+    return case({v: i for i, v in enumerate(valores)}, value=columna, else_=len(valores))
+
+
+_RIESGO, _TIPO = _lugar_en(Hallazgo.riesgo, ORDEN_RIESGO), _lugar_en(Hallazgo.tipo, ORDEN_TIPOS)
+# Cada orden: (expresión, descendente). La primera es la que elige el usuario (y la que se invierte);
+# las demás desempatan. Siempre se termina por id para que la paginación sea estable.
+ORDENES = {
+    "riesgo": [(_RIESGO, False), (_TIPO, False), (Hallazgo.confianza, True)],
+    "tipo": [(_TIPO, False), (Hallazgo.tipo, False), (_RIESGO, False), (Hallazgo.confianza, True)],
+    "confianza": [(Hallazgo.confianza, True), (_RIESGO, False)],
+    "ubicacion": [(Hallazgo.fuente, False), (Hallazgo.numero, False), (Hallazgo.columna, False)],
+}
+
+
+def _orden_sql(orden: str, invertir: bool) -> list:
+    (principal, desc), *desempates = ORDENES[orden]
+    claves = [principal.desc() if desc != invertir else principal.asc()]
+    claves += [e.desc() if d else e.asc() for e, d in desempates]
+    return claves + [Hallazgo.id]
 
 
 def guardar(db: Session, resultado: ResultadoEscaneo) -> Escaneo:
@@ -22,7 +47,7 @@ def guardar(db: Session, resultado: ResultadoEscaneo) -> Escaneo:
     )
     escaneo.hallazgos = [
         Hallazgo(
-            fuente=h.fuente, columna=h.columna, posicion=h.posicion,
+            fuente=h.fuente, columna=h.columna, posicion=h.posicion, numero=h.numero,
             tipo=h.match.type, riesgo=h.match.risk_level.value,
             confianza=round(h.match.confidence), nivel_confianza=h.match.confidence_level.value,
             contexto=", ".join(h.match.context.positive_keywords),
@@ -103,7 +128,7 @@ def detalle(db: Session, escaneo_id: int) -> dict | None:
 
 
 def hallazgos(db: Session, escaneo_id: int, riesgo: str = "", tipo: str = "", buscar: str = "",
-              pagina: int = 1, por_pagina: int = 50) -> dict:
+              pagina: int = 1, por_pagina: int = 50, orden: str = "riesgo", invertir: bool = False) -> dict:
     q = select(Hallazgo).where(Hallazgo.escaneo_id == escaneo_id)
     if riesgo:
         q = q.where(Hallazgo.riesgo == riesgo)
@@ -113,7 +138,7 @@ def hallazgos(db: Session, escaneo_id: int, riesgo: str = "", tipo: str = "", bu
         patron = f"%{buscar}%"
         q = q.where(Hallazgo.fuente.ilike(patron) | Hallazgo.columna.ilike(patron))
     total = db.scalar(select(func.count()).select_from(q.subquery()))
-    filas = db.scalars(q.order_by(Hallazgo.id).offset((pagina - 1) * por_pagina).limit(por_pagina)).all()
+    filas = db.scalars(q.order_by(*_orden_sql(orden, invertir)).offset((pagina - 1) * por_pagina).limit(por_pagina)).all()
     return {
         "total": total, "pagina": pagina, "por_pagina": por_pagina,
         "items": [{

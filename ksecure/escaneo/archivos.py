@@ -22,7 +22,7 @@ EXTENSIONES_SQLITE = {".db", ".sqlite", ".sqlite3"}
 def _escanear_texto(texto: str, fuente: str, resultado: ResultadoEscaneo, validators: list[Validator]):
     for v in validators:
         for m in v.validate_content(texto, fuente):
-            resultado.hallazgos.append(Hallazgo(m, fuente, f"línea {m.line_number}"))
+            resultado.hallazgos.append(Hallazgo(m, fuente, f"línea {m.line_number}", numero=m.line_number))
 
 
 def _escanear_documento(ruta: str, nombre: str, resultado: ResultadoEscaneo, validators: list[Validator]):

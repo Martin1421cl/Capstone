@@ -23,6 +23,6 @@ def escanear_filas(resultado: ResultadoEscaneo, fuente: str, filas: Iterable[tup
                 continue
             for v in validators:
                 for m in v.validate_content(texto, fuente, context_hint=columna):
-                    resultado.hallazgos.append(Hallazgo(m, fuente, posicion, columna))
+                    resultado.hallazgos.append(Hallazgo(m, fuente, posicion, columna, n))
     resultado.filas_por_fuente[fuente] = n
     return n

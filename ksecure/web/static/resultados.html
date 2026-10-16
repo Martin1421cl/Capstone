@@ -52,10 +52,11 @@
         <select id="filtro-riesgo" aria-label="Filtrar por riesgo"><option value="">Todos los riesgos</option></select>
         <select id="filtro-tipo" aria-label="Filtrar por tipo"><option value="">Todos los tipos</option></select>
         <input id="filtro-buscar" type="search" placeholder="Buscar archivo, tabla o columna" aria-label="Buscar">
+        <span class="muted" id="info-orden" style="margin-left:auto;font-size:.88rem"></span>
       </div>
       <div class="tabla-wrap">
         <table>
-          <thead><tr><th>Dónde</th><th>Tipo</th><th>Dato</th><th>Riesgo</th><th>Confianza</th><th>Contexto</th></tr></thead>
+          <thead><tr><th data-orden="ubicacion">Dónde</th><th data-orden="tipo">Tipo</th><th>Dato</th><th data-orden="riesgo">Riesgo</th><th data-orden="confianza">Confianza</th><th>Contexto</th></tr></thead>
           <tbody id="hallazgos"></tbody>
         </table>
       </div>
