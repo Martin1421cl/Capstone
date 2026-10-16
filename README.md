@@ -70,6 +70,18 @@ uvicorn ksecure.web.app:app --reload
 Abrir http://localhost:8000. La primera vez que escanees se pide crear la **clave de auditor**.
 La API queda documentada en http://localhost:8000/docs.
 
+## Publicar en la nube (gratis: Render + Neon)
+
+1. **Neon** (https://neon.tech): crear un proyecto y copiar la *connection string* (`postgresql://...`).
+2. **GitHub**: subir este repositorio (privado).
+3. **Render** (https://render.com): *New → Blueprint* → elegir el repositorio. Render lee `render.yaml`
+   y pide dos variables:
+   - `KSECURE_DB_URL`: la connection string de Neon.
+   - `KSECURE_ACCESO`: `usuario:contraseña` para entrar a la web (candado mientras no haya login).
+4. Abrir la URL que entrega Render y **crear de inmediato la clave de auditor**.
+
+El plan gratis de Render "duerme" la app tras 15 minutos sin uso: la primera visita tarda ~1 minuto.
+
 ## Pruebas
 
 ```bash

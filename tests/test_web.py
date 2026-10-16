@@ -122,3 +122,29 @@ def test_ordenar_hallazgos(con_clave):
     assert confianzas == sorted(confianzas, reverse=True)
     assert tipos("?orden=ubicacion") == ["EMAIL", "TELEFONO", "TARJETA_PAGO", "RUT"]  # orden del archivo
     assert con_clave.get(url + "?orden=inventado").status_code == 422
+
+
+# --- Publicación en la nube ----------------------------------------------------------
+
+from ksecure.almacenamiento.db import normalizar_url
+
+
+def test_candado_de_acceso():
+    c = TestClient(create_app("sqlite://", acceso="equipo:clave-secreta"))
+    assert c.get("/").status_code == 401
+    assert c.get("/api/escaneos").headers["www-authenticate"].startswith("Basic")
+    assert c.get("/api/escaneos", auth=("equipo", "otra")).status_code == 401
+    assert c.get("/api/escaneos", auth=("equipo", "clave-secreta")).status_code == 200
+    assert c.get("/api/health").status_code == 200  # Render la usa para saber si la app está viva
+    with pytest.raises(ValueError):
+        create_app("sqlite://", acceso="sin-dos-puntos")
+
+
+@pytest.mark.parametrize("url, esperada", [
+    ("postgres://u:p@ep-x.neon.tech/db?sslmode=require", "postgresql+psycopg://u:p@ep-x.neon.tech/db?sslmode=require"),
+    ("postgresql://u:p@h/db", "postgresql+psycopg://u:p@h/db"),
+    ("postgresql+psycopg://u:p@h/db", "postgresql+psycopg://u:p@h/db"),
+    ("sqlite:///data/ksecure.db", "sqlite:///data/ksecure.db"),
+])
+def test_url_de_neon(url, esperada):
+    assert normalizar_url(url) == esperada
