@@ -4,6 +4,7 @@ services:
     name: k-secure
     runtime: python
     plan: free
+    region: ohio  # la misma región que la base de Neon (AWS US East 2)
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn ksecure.web.app:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/health
