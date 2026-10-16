@@ -74,12 +74,15 @@ def _engine_servidor(datos: DatosConexion) -> Engine:
         query={"service_name": datos.base} if oracle and datos.base else {},
     )
     connect_args = {
-        "postgresql": {"options": "-c default_transaction_read_only=on", "connect_timeout": _TIMEOUT},
+        # Sin "options" de arranque: los agrupadores de conexiones (Neon, Supabase, PgBouncer) lo rechazan.
+        "postgresql": {"connect_timeout": _TIMEOUT, "prepare_threshold": None},
         "mysql": {"connect_timeout": _TIMEOUT},
         "sqlserver": {"login_timeout": _TIMEOUT},
         "oracle": {"tcp_connect_timeout": _TIMEOUT},
     }[datos.motor]
-    engine = create_engine(url, connect_args=connect_args)
+    # PostgreSQL: cada transacción se abre READ ONLY (BEGIN READ ONLY), así el motor rechaza cualquier escritura.
+    opciones = {"postgresql_readonly": True} if datos.motor == "postgresql" else {}
+    engine = create_engine(url, connect_args=connect_args, execution_options=opciones)
     if datos.motor == "mysql":
         @event.listens_for(engine, "connect")
         def _solo_lectura(conn, _):
