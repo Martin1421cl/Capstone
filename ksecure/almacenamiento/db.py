@@ -36,7 +36,9 @@ def crear_sesiones(url: str | None = None) -> sessionmaker:
         engine = create_engine(url, connect_args={"check_same_thread": False}, **extra)
         event.listen(engine, "connect", _sqlite_foreign_keys)
     else:
-        engine = create_engine(url, pool_pre_ping=True)
+        # prepare_threshold=None: el agrupador de conexiones de Neon (PgBouncer) no siempre conoce
+        # las consultas preparadas que psycopg crea solo, y fallarían al azar.
+        engine = create_engine(url, pool_pre_ping=True, connect_args={"prepare_threshold": None})
     Base.metadata.create_all(engine)
     _agregar_columnas_nuevas(engine)
     return sessionmaker(engine, expire_on_commit=False)
