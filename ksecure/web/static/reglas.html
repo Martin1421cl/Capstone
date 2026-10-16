@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reglas · K-Secure</title>
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/css/ksecure.css">
+</head>
+<body data-pagina="reglas">
+  <header id="site-header" class="site-header"></header>
+
+  <main class="container">
+    <h1 class="entrar">Reglas de detección</h1>
+    <p class="muted entrar">Agrega nuevos tipos de datos o ajusta los que vienen incluidos, sin programar. Los cambios se aplican desde el próximo escaneo.</p>
+
+    <section class="section" style="margin-top:32px">
+      <div class="section-title">
+        <h2>Reglas personalizadas</h2>
+        <button class="btn btn-primary" id="nueva" type="button"></button>
+      </div>
+      <div class="grid grid-3" id="personalizadas"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>Validadores incluidos</h2>
+        <p class="muted" style="margin:0">Traen algoritmos propios (Módulo 11, Luhn…). Puedes apagarlos o sumarles palabras de contexto.</p>
+      </div>
+      <div class="grid grid-3" id="incluidos"></div>
+    </section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+  <script type="module" src="/js/reglas.js"></script>
+</body>
+</html>
