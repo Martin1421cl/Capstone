@@ -84,6 +84,13 @@ La API queda documentada en http://localhost:8000/docs.
 
 El plan gratis de Render "duerme" la app tras 15 minutos sin uso: la primera visita tarda ~1 minuto.
 
+## Demo: base de un cliente ficticio
+
+`demo/cliente_demo.sql` crea 4 tablas con datos chilenos sintéticos (clientes estilo SAP con el RUT
+en `STCD1`, tarjetas de prueba en `ZZDATA`, RRHH con cuentas y patentes, ventas a empresas).
+En Neon: crear la base `cliente_demo`, abrir el *SQL Editor* sobre ella, pegar el archivo y ejecutar.
+Luego en K-Secure: **Base de datos → PostgreSQL** con los datos de conexión de Neon.
+
 ## Pruebas
 
 ```bash
