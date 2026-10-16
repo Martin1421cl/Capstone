@@ -60,11 +60,14 @@ tests/
 
 ## Uso
 
+El proyecto vive en la carpeta `k-secure-web/` del repositorio Capstone.
+
 ```bash
+cd k-secure-web
 python -m venv .venv
 .venv\Scripts\activate          # Linux/Mac: source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn ksecure.web.app:app --reload
+uvicorn ksecure.web.app:app
 ```
 
 Abrir http://localhost:8000. La primera vez que escanees se pide crear la **clave de auditor**.
@@ -73,12 +76,11 @@ La API queda documentada en http://localhost:8000/docs.
 ## Publicar en la nube (gratis: Render + Neon)
 
 1. **Neon** (https://neon.tech): crear un proyecto y copiar la *connection string* (`postgresql://...`).
-2. **GitHub**: subir este repositorio (privado).
-3. **Render** (https://render.com): *New → Blueprint* → elegir el repositorio. Render lee `render.yaml`
+2. **Render** (https://render.com): *New → Blueprint* → elegir el repositorio Capstone. Render lee `render.yaml` (en la raíz)
    y pide dos variables:
    - `KSECURE_DB_URL`: la connection string de Neon.
    - `KSECURE_ACCESO`: `usuario:contraseña` para entrar a la web (candado mientras no haya login).
-4. Abrir la URL que entrega Render y **crear de inmediato la clave de auditor**.
+3. Abrir la URL que entrega Render y **crear de inmediato la clave de auditor**.
 
 El plan gratis de Render "duerme" la app tras 15 minutos sin uso: la primera visita tarda ~1 minuto.
 
