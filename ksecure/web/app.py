@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from ksecure.almacenamiento.db import crear_sesiones
-from ksecure.web.api import auditor, escanear, resultados
+from ksecure.web.api import auditor, escanear, reglas, resultados
 
 STATIC = Path(__file__).parent / "static"
 
@@ -26,6 +26,7 @@ def create_app(db_url: str | None = None) -> FastAPI:
     app.include_router(escanear.router)
     app.include_router(resultados.router)
     app.include_router(auditor.router)
+    app.include_router(reglas.router)
     # Va al final: todo lo que no sea /api/... son las páginas (index.html, archivos.html, ...).
     app.mount("/", StaticFiles(directory=STATIC, html=True), name="paginas")
     return app

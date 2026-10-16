@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from ksecure.almacenamiento import repositorio
+from ksecure.almacenamiento import reglas, repositorio
 from ksecure.escaneo.archivos import escanear_archivos
 from ksecure.escaneo.bases_datos import (MOTORES, PUERTOS, ConexionError, DatosConexion, conectar,
                                          escanear_bd, listar_tablas)
@@ -34,7 +34,7 @@ async def escanear_subidos(archivos: list[UploadFile], db: Session = Depends(get
             ruta = Path(carpeta) / f"{i}{Path(nombre).suffix.lower()}"
             ruta.write_bytes(datos)
             en_disco.append((str(ruta), nombre))
-        resultado = escanear_archivos(en_disco)
+        resultado = escanear_archivos(en_disco, reglas.validadores_activos(db))
     return {"escaneo_id": repositorio.guardar(db, resultado).id}
 
 
@@ -84,7 +84,7 @@ def escanear_base(pedido: PedidoEscaneoBD, db: Session = Depends(get_db)):
     engine = _conectar(pedido.conexion)
     try:
         descripcion = DatosConexion(**pedido.conexion.model_dump()).descripcion()
-        resultado = escanear_bd(engine, descripcion, pedido.max_filas, pedido.tablas)
+        resultado = escanear_bd(engine, descripcion, pedido.max_filas, pedido.tablas, reglas.validadores_activos(db))
     finally:
         engine.dispose()
     return {"escaneo_id": repositorio.guardar(db, resultado).id}

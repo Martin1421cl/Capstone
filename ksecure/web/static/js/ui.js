@@ -30,6 +30,9 @@ const ICONOS = {
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/>',
   historial: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  lapiz: '<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/>',
+  mas: '<path d="M12 5v14M5 12h14"/>',
+  reglas: '<path d="M4 6h10M4 12h16M4 18h7"/><circle cx="17" cy="6" r="2"/><circle cx="14" cy="18" r="2"/>',
 };
 
 export function icono(nombre) {
@@ -45,6 +48,7 @@ const PAGINAS = [
   ["archivos", "/archivos.html", "Archivos"],
   ["base-datos", "/base-datos.html", "Base de datos"],
   ["historial", "/historial.html", "Historial"],
+  ["reglas", "/reglas.html", "Reglas"],
 ];
 
 function montarLayout() {

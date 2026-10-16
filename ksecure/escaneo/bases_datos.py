@@ -14,6 +14,7 @@ from sqlalchemy.engine import URL, Engine
 from ksecure.escaneo.celdas import escanear_filas
 from ksecure.escaneo.resultado import ResultadoEscaneo
 from ksecure.validators import default_validators
+from ksecure.validators.base import Validator
 
 MOTORES = {
     "sqlite": "SQLite",
@@ -116,10 +117,10 @@ def _posicion(fila, clave: list[str], numero: int) -> str:
 
 
 def escanear_bd(engine: Engine, descripcion: str, max_filas: int = 1000,
-                tablas: list[str] | None = None) -> ResultadoEscaneo:
+                tablas: list[str] | None = None, validators: list[Validator] | None = None) -> ResultadoEscaneo:
     """Pasa cada celda por los validadores, usando el nombre de su columna como contexto."""
     resultado = ResultadoEscaneo("bd", descripcion)
-    validators = default_validators()
+    validators = validators if validators is not None else default_validators()
     disponibles = listar_tablas(engine)
     for nombre in tablas or disponibles:
         if nombre not in disponibles:

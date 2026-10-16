@@ -6,7 +6,7 @@ para mostrarlo, y cifrado para que un auditor con la clave pueda verlo (ver bove
 
 from datetime import datetime
 
-from sqlalchemy import JSON, ForeignKey, Integer, LargeBinary, String, Text
+from sqlalchemy import JSON, Boolean, ForeignKey, Integer, LargeBinary, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -54,3 +54,33 @@ class Hallazgo(Base):
     valor_cifrado: Mapped[bytes] = mapped_column(LargeBinary)
 
     escaneo: Mapped[Escaneo] = relationship(back_populates="hallazgos")
+
+
+class Regla(Base):
+    """Regla creada desde la pantalla "Reglas" (ver validators/regla.py)."""
+
+    __tablename__ = "reglas"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    nombre: Mapped[str] = mapped_column(String(50), unique=True)   # ej. PASAPORTE; es el "tipo" del hallazgo
+    descripcion: Mapped[str] = mapped_column(String(300), default="")
+    patron: Mapped[str] = mapped_column(String(500))
+    validacion: Mapped[str] = mapped_column(String(20), default="ninguna")
+    palabras_positivas: Mapped[list] = mapped_column(type_=JSON, default=list)
+    palabras_negativas: Mapped[list] = mapped_column(type_=JSON, default=list)
+    requiere_contexto: Mapped[bool] = mapped_column(Boolean, default=False)
+    confianza: Mapped[int] = mapped_column(Integer, default=70)
+    riesgo: Mapped[str] = mapped_column(String(20))
+    visibles: Mapped[int] = mapped_column(Integer, default=4)
+    activa: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class AjusteValidador(Base):
+    """Cambios a un validador incluido (RUT, TELEFONO...): activarlo y sumarle palabras de contexto."""
+
+    __tablename__ = "ajustes_validadores"
+
+    nombre: Mapped[str] = mapped_column(String(50), primary_key=True)
+    activo: Mapped[bool] = mapped_column(Boolean, default=True)
+    palabras_positivas: Mapped[list] = mapped_column(type_=JSON, default=list)
+    palabras_negativas: Mapped[list] = mapped_column(type_=JSON, default=list)
