@@ -1,8 +1,9 @@
-# Despliegue en Render (plan gratis). En Render: New → Blueprint → elegir este repositorio.
+# Despliegue de K-Secure en Render (plan gratis). En Render: New → Blueprint → elegir este repositorio.
 services:
   - type: web
     name: k-secure
     runtime: python
+    rootDir: k-secure-web  # el proyecto vive en esta carpeta del repositorio Capstone
     plan: free
     region: ohio  # la misma región que la base de Neon (AWS US East 2)
     buildCommand: pip install -r requirements.txt
