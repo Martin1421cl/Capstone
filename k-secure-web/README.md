@@ -8,6 +8,8 @@ validadores con confianza 0-100 (HIGH ≥ 90, MEDIUM ≥ 60, LOW < 60), análisi
 preprocesadores por tipo de archivo. K-Secure agrega la clasificación de riesgo
 Público / Interno / Confidencial / Restringido, el escaneo de bases de datos y la bóveda cifrada.
 
+Arquitectura completa, decisiones de diseño y cómo se construyó: [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md).
+
 ## Cómo se protegen los datos
 
 - Las bases del cliente se abren en **solo lectura** (K-Secure solo ejecuta `SELECT`).
