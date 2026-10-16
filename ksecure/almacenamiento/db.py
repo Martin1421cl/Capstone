@@ -13,6 +13,14 @@ from ksecure.almacenamiento.modelos import Base
 _DATA = Path(__file__).resolve().parents[2] / "data"
 
 
+def normalizar_url(url: str) -> str:
+    """Neon, Render y Supabase entregan "postgres://..." o "postgresql://...": usamos el driver psycopg 3."""
+    for prefijo in ("postgres://", "postgresql://"):
+        if url.startswith(prefijo):
+            return "postgresql+psycopg://" + url[len(prefijo):]
+    return url
+
+
 def url_por_defecto() -> str:
     if url := os.environ.get("KSECURE_DB_URL"):
         return url
@@ -21,7 +29,7 @@ def url_por_defecto() -> str:
 
 
 def crear_sesiones(url: str | None = None) -> sessionmaker:
-    url = url or url_por_defecto()
+    url = normalizar_url(url or url_por_defecto())
     if url.startswith("sqlite"):
         # StaticPool solo para ":memory:" (tests): todas las sesiones ven la misma base.
         extra = {"poolclass": StaticPool} if url == "sqlite://" else {}

@@ -10,14 +10,16 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from ksecure.almacenamiento.db import crear_sesiones
+from ksecure.web.acceso import proteger
 from ksecure.web.api import auditor, escanear, reglas, resultados
 
 STATIC = Path(__file__).parent / "static"
 
 
-def create_app(db_url: str | None = None) -> FastAPI:
+def create_app(db_url: str | None = None, acceso: str | None = None) -> FastAPI:
     app = FastAPI(title="K-Secure", description="Detección de datos sensibles chilenos en archivos y bases de datos")
     app.state.sesiones = crear_sesiones(db_url)
+    proteger(app, acceso)
 
     @app.get("/api/health", tags=["sistema"])
     def health():
