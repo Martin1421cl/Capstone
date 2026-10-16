@@ -17,6 +17,13 @@ Público / Interno / Confidencial / Restringido, el escaneo de bases de datos y 
   cifrada con la llave pública. Ver un original exige la clave de auditor (5 intentos fallidos
   bloquean 1 minuto). Detalle en `ksecure/almacenamiento/boveda.py`.
 
+## Reglas sin programar
+
+En la página **Reglas** se crean detectores nuevos (pasaporte, ficha clínica, N° de socio...)
+con un patrón, una validación opcional (Módulo 11 o Luhn), palabras de contexto, riesgo,
+confianza y cuántos caracteres dejar visibles. Se prueban en vivo con un texto de ejemplo antes
+de guardarlas. Los validadores incluidos se pueden apagar o sumarles palabras de contexto.
+
 ## Estructura
 
 ```
@@ -25,7 +32,8 @@ ksecure/
 ├── validators/             # QUÉ es sensible (uno por tipo de dato, con enmascarado propio)
 │   ├── base.py             #   Clase base: contexto, nombre de columna como pista, enmascarado
 │   ├── rut.py · telefono.py · tarjeta.py · email.py
-│   └── cuenta_bancaria.py · patente.py · secreto.py
+│   ├── cuenta_bancaria.py · patente.py · secreto.py
+│   └── regla.py            #   Validador genérico para las reglas creadas en pantalla
 ├── preprocessors/          # CÓMO se lee cada archivo (como ferret-scan)
 │   ├── __init__.py         #   Router: process_file()
 │   ├── texto.py            #   txt, csv, json, código... (UTF-8, UTF-16, cp1252)
@@ -39,11 +47,12 @@ ksecure/
 ├── almacenamiento/         # DÓNDE se guarda
 │   ├── modelos.py · db.py  #   tablas de la base interna (SQLite local o KSECURE_DB_URL)
 │   ├── boveda.py           #   cifrado de originales con la clave de auditor
-│   └── repositorio.py      #   guardar, listar, resumir, columnas sensibles, revelar
+│   ├── repositorio.py      #   guardar, listar, resumir, columnas sensibles, revelar
+│   └── reglas.py           #   mantenedor de reglas: guarda reglas y arma los validadores activos
 └── web/                    # CÓMO se muestra
     ├── app.py              #   FastAPI: monta la API y las páginas
-    ├── api/                #   escanear.py · resultados.py · auditor.py
-    └── static/             #   index, archivos, base-datos, resultados, historial (+ css, js, img)
+    ├── api/                #   escanear.py · resultados.py · auditor.py · reglas.py
+    └── static/             #   index, archivos, base-datos, resultados, historial, reglas (+ css, js, img)
 tests/
 ```
 
