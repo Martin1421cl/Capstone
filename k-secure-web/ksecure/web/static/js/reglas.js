@@ -1,5 +1,5 @@
 import { RIESGOS, api, nombreTipo } from "./api.js";
-import { aviso, el, icono } from "./ui.js";
+import { aviso, confirmar, el, icono } from "./ui.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -314,9 +314,20 @@ function tarjetaRegla(r) {
     el("div", { class: "acciones" },
       el("button", { class: "btn btn-sm", type: "button", onclick: () => abrirAsistente(r) }, icono("lapiz"), "Editar"),
       el("button", { class: "btn btn-sm btn-danger", type: "button", onclick: async () => {
-        if (!confirm(`¿Borrar la regla "${tituloRegla(r)}"? Los escaneos anteriores no cambian.`)) return;
-        await api(`/reglas/${r.id}`, { method: "DELETE" });
-        aviso("Regla borrada");
+        const ok = await confirmar({
+          titulo: "¿Borrar esta regla?",
+          detalle: tituloRegla(r),
+          texto: "Deja de aplicarse desde el próximo escaneo. Los escaneos anteriores no cambian.",
+          textoBoton: "Borrar regla",
+          peligro: true,
+        });
+        if (!ok) return;
+        try {
+          await api(`/reglas/${r.id}`, { method: "DELETE" });
+          aviso("Regla borrada");
+        } catch (e) {
+          aviso(e.message, "error");
+        }
         cargar();
       } }, icono("basura"), "Borrar")));
 }

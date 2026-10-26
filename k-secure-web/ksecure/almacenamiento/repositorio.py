@@ -127,26 +127,68 @@ def detalle(db: Session, escaneo_id: int) -> dict | None:
     }
 
 
-def hallazgos(db: Session, escaneo_id: int, riesgo: str = "", tipo: str = "", buscar: str = "",
-              pagina: int = 1, por_pagina: int = 50, orden: str = "riesgo", invertir: bool = False) -> dict:
-    q = select(Hallazgo).where(Hallazgo.escaneo_id == escaneo_id)
+def _filtros(escaneo_id: int, riesgo: str, tipo: str, buscar: str) -> list:
+    """Condiciones comunes a la tabla de hallazgos y a la vista por tipo."""
+    condiciones = [Hallazgo.escaneo_id == escaneo_id]
     if riesgo:
-        q = q.where(Hallazgo.riesgo == riesgo)
+        condiciones.append(Hallazgo.riesgo == riesgo)
     if tipo:
-        q = q.where(Hallazgo.tipo == tipo)
+        condiciones.append(Hallazgo.tipo == tipo)
     if buscar:
         patron = f"%{buscar}%"
-        q = q.where(Hallazgo.fuente.ilike(patron) | Hallazgo.columna.ilike(patron))
+        condiciones.append(Hallazgo.fuente.ilike(patron) | Hallazgo.columna.ilike(patron))
+    return condiciones
+
+
+def _item(h: Hallazgo) -> dict:
+    """Un hallazgo tal como sale de la API: siempre enmascarado."""
+    return {
+        "id": h.id, "fuente": h.fuente, "columna": h.columna, "posicion": h.posicion,
+        "tipo": h.tipo, "riesgo": h.riesgo, "confianza": h.confianza,
+        "nivel_confianza": h.nivel_confianza, "contexto": h.contexto,
+        "valor": h.valor_enmascarado,
+    }
+
+
+def hallazgos(db: Session, escaneo_id: int, riesgo: str = "", tipo: str = "", buscar: str = "",
+              pagina: int = 1, por_pagina: int = 50, orden: str = "riesgo", invertir: bool = False) -> dict:
+    q = select(Hallazgo).where(*_filtros(escaneo_id, riesgo, tipo, buscar))
     total = db.scalar(select(func.count()).select_from(q.subquery()))
     filas = db.scalars(q.order_by(*_orden_sql(orden, invertir)).offset((pagina - 1) * por_pagina).limit(por_pagina)).all()
+    return {"total": total, "pagina": pagina, "por_pagina": por_pagina, "items": [_item(h) for h in filas]}
+
+
+def por_tipo(db: Session, escaneo_id: int, riesgo: str = "", tipo: str = "", buscar: str = "",
+             pagina: int = 1, por_pagina: int = 50) -> dict:
+    """Hallazgos como planilla: una columna por tipo de dato, cada una con sus valores enmascarados.
+
+    Las columnas son independientes: la fila 1 del RUT y la fila 1 del correo pueden venir de lugares
+    distintos. Todas comparten la paginación (la página n trae los hallazgos n de cada tipo), así que hay
+    tantas páginas como necesite la columna más larga. Dentro de cada columna, primero el mayor riesgo.
+    """
+    filtros = _filtros(escaneo_id, riesgo, tipo, buscar)
+    columnas: dict[str, dict] = {}
+    for t, r, n in db.execute(select(Hallazgo.tipo, Hallazgo.riesgo, func.count())
+                              .where(*filtros).group_by(Hallazgo.tipo, Hallazgo.riesgo)).all():
+        c = columnas.setdefault(t, {"tipo": t, "total": 0, "riesgo": RiskLevel.PUBLICO.value})
+        c["total"] += n
+        if ORDEN_RIESGO.index(r) < ORDEN_RIESGO.index(c["riesgo"]):
+            c["riesgo"] = r  # la columna muestra el peor riesgo que contiene
+
+    # Mismo orden que al ordenar por tipo: RUT, tarjetas, cuentas... y las reglas personalizadas al final.
+    orden_tipo = {t: i for i, t in enumerate(ORDEN_TIPOS)}
+    lista = sorted(columnas.values(), key=lambda c: (orden_tipo.get(c["tipo"], len(ORDEN_TIPOS)), c["tipo"]))
+    for c in lista:
+        filas = db.scalars(select(Hallazgo).where(*filtros, Hallazgo.tipo == c["tipo"])
+                           .order_by(*_orden_sql("riesgo", False))
+                           .offset((pagina - 1) * por_pagina).limit(por_pagina)).all()
+        c["items"] = [_item(h) for h in filas]
+
+    mas_larga = max((c["total"] for c in lista), default=0)
     return {
-        "total": total, "pagina": pagina, "por_pagina": por_pagina,
-        "items": [{
-            "id": h.id, "fuente": h.fuente, "columna": h.columna, "posicion": h.posicion,
-            "tipo": h.tipo, "riesgo": h.riesgo, "confianza": h.confianza,
-            "nivel_confianza": h.nivel_confianza, "contexto": h.contexto,
-            "valor": h.valor_enmascarado,
-        } for h in filas],
+        "total": sum(c["total"] for c in lista), "pagina": pagina, "por_pagina": por_pagina,
+        "paginas": max(1, -(-mas_larga // por_pagina)),  # división hacia arriba
+        "columnas": lista,
     }
 
 

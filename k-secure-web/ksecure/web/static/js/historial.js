@@ -1,6 +1,6 @@
 import { api } from "./api.js";
 import { tarjetaEscaneo } from "./tarjetas.js";
-import { aviso, el, icono } from "./ui.js";
+import { aviso, confirmar, el, icono, plural } from "./ui.js";
 
 const lista = document.getElementById("lista");
 
@@ -19,9 +19,20 @@ async function cargar() {
   lista.replaceChildren(...(escaneos.length
     ? escaneos.map((e) => tarjetaEscaneo(e, {
       alBorrar: async () => {
-        if (!confirm(`¿Borrar "${e.origen_nombre}" y todos sus hallazgos?`)) return;
-        await api(`/escaneos/${e.id}`, { method: "DELETE" });
-        aviso("Escaneo borrado");
+        const ok = await confirmar({
+          titulo: "¿Borrar este escaneo?",
+          detalle: e.origen_nombre,
+          texto: `Se eliminan sus ${plural(e.total, "hallazgo")} y los originales cifrados. No se puede deshacer.`,
+          textoBoton: "Borrar escaneo",
+          peligro: true,
+        });
+        if (!ok) return;
+        try {
+          await api(`/escaneos/${e.id}`, { method: "DELETE" });
+          aviso("Escaneo borrado");
+        } catch (err) {
+          aviso(err.message, "error");
+        }
         cargar();
       },
     }))

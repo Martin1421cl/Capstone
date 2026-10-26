@@ -20,6 +20,7 @@ const ICONOS = {
   bd: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
   subir: '<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
   flecha: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  flechaIzq: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
   ojo: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   ojoNo: '<path d="M3 3l18 18M10.6 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6A16.6 16.6 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6"/>',
   basura: '<path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>',
@@ -57,7 +58,7 @@ function montarLayout() {
   document.getElementById("site-header")?.replaceChildren(
     el("div", { class: "container" },
       el("a", { href: "/", class: "brand", "aria-label": "K-Secure, inicio" },
-        el("img", { src: "/img/logo.webp", alt: "K-Secure", width: 94, height: 40 })),
+        el("img", { src: "/img/logo.webp", alt: "K-Secure", width: 99, height: 40 })),
       el("nav", { class: "nav", "aria-label": "Principal" },
         PAGINAS.map(([id, href, texto]) =>
           el("a", { href, "aria-current": id === actual ? "page" : false }, texto)))));
@@ -159,6 +160,38 @@ export function revelarHallazgo(id) {
     async (form) => (await api(`/hallazgos/${id}/revelar`, {
       method: "POST", json: { clave: new FormData(form).get("clave") } })).valor);
 }
+
+// Reemplaza al confirm() del navegador con un diálogo del mismo estilo que el de la clave de auditor.
+// Devuelve true si se confirma; Cancelar, Escape o un clic fuera del diálogo devuelven false.
+export function confirmar({ titulo, texto, detalle, textoBoton = "Confirmar", peligro = false }) {
+  return new Promise((resolve) => {
+    let aceptado = false;
+    const cancelar = el("button", { class: "btn", type: "button", onclick: () => d.close() }, "Cancelar");
+    const aceptar = el("button", {
+      class: `btn ${peligro ? "btn-peligro" : "btn-primary"}`, type: "button",
+      onclick: () => { aceptado = true; d.close(); },
+    }, peligro ? icono("basura") : null, textoBoton);
+    const d = el("dialog", { class: "confirmar", "aria-labelledby": "confirmar-titulo", "aria-describedby": "confirmar-texto" },
+      el("div", { class: `icon-badge${peligro ? " peligro" : ""}` }, icono(peligro ? "basura" : "info")),
+      el("h2", { id: "confirmar-titulo" }, titulo),
+      detalle ? el("p", { class: "detalle" }, detalle) : null,
+      el("p", { class: "muted", id: "confirmar-texto" }, texto),
+      el("div", { class: "acciones" }, cancelar, aceptar));
+    d.addEventListener("click", (ev) => {  // clic en el fondo oscuro, fuera del cuadro
+      if (ev.target !== d) return;
+      const r = d.getBoundingClientRect();
+      if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) d.close();
+    });
+    d.addEventListener("close", () => { d.remove(); resolve(aceptado); });
+    document.body.append(d);
+    d.showModal();
+    cancelar.focus();  // en una acción que borra, un Enter apurado no debe borrar
+  });
+}
+
+// "1 hallazgo" / "1.234 hallazgos"
+export const plural = (n, singular, varios = `${singular}s`) =>
+  `${Number(n).toLocaleString("es-CL")} ${n === 1 ? singular : varios}`;
 
 // --- Utilidades --------------------------------------------------------------
 export function contarHasta(nodo, final, ms = 900) {

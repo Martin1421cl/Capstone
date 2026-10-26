@@ -124,6 +124,40 @@ def test_ordenar_hallazgos(con_clave):
     assert con_clave.get(url + "?orden=inventado").status_code == 422
 
 
+def test_hallazgos_por_tipo_una_columna_por_dato(con_clave):
+    texto = ("correo ana.rojas@gmail.com\n"           # EMAIL, Confidencial
+             "fijo 41 223 4567\n"                     # TELEFONO, Interno
+             "celular +56 9 6123 4870\n"              # TELEFONO, Confidencial
+             "RUT: 15.432.198-5\n"                    # RUT, Restringido
+             "RUT titular 16.543.210-K\n")            # RUT, Restringido
+    escaneo_id = subir(con_clave, ("a.txt", texto.encode())).json()["escaneo_id"]
+    url = f"/api/escaneos/{escaneo_id}/por-tipo"
+
+    datos = con_clave.get(url).json()
+    columnas = {c["tipo"]: c for c in datos["columnas"]}
+    # Una columna por tipo, en el mismo orden que "ordenar por tipo": RUT, teléfono, correo.
+    assert [c["tipo"] for c in datos["columnas"]] == ["RUT", "TELEFONO", "EMAIL"]
+    assert datos["total"] == 5 and datos["paginas"] == 1
+    assert {t: c["total"] for t, c in columnas.items()} == {"RUT": 2, "TELEFONO": 2, "EMAIL": 1}
+    # Cada columna muestra su peor riesgo y, dentro de ella, primero el mayor riesgo.
+    assert columnas["TELEFONO"]["riesgo"] == "Confidencial"
+    assert [h["riesgo"] for h in columnas["TELEFONO"]["items"]] == ["Confidencial", "Interno"]
+    # Solo valores enmascarados: el original no sale sin la clave de auditor.
+    assert all(h["tipo"] == "RUT" for h in columnas["RUT"]["items"])
+    assert "15.432.198" not in str(datos) and "ana.rojas" not in str(datos)
+
+    # Paginación compartida: tantas páginas como la columna más larga.
+    pagina2 = con_clave.get(url + "?por_pagina=1&pagina=2").json()
+    assert pagina2["paginas"] == 2
+    assert {c["tipo"]: len(c["items"]) for c in pagina2["columnas"]} == {"RUT": 1, "TELEFONO": 1, "EMAIL": 0}
+
+    # Los mismos filtros que la tabla de detalle.
+    assert [c["tipo"] for c in con_clave.get(url + "?riesgo=Restringido").json()["columnas"]] == ["RUT"]
+    assert [c["tipo"] for c in con_clave.get(url + "?tipo=EMAIL").json()["columnas"]] == ["EMAIL"]
+    assert con_clave.get(url + "?buscar=otro.txt").json() == {
+        "total": 0, "pagina": 1, "por_pagina": 50, "paginas": 1, "columnas": []}
+
+
 # --- Publicación en la nube ----------------------------------------------------------
 
 from ksecure.almacenamiento.db import normalizar_url

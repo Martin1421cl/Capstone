@@ -32,6 +32,17 @@ def hallazgos(escaneo_id: int, riesgo: str = "", tipo: str = "", buscar: str = "
     return repositorio.hallazgos(db, escaneo_id, riesgo, tipo, buscar, pagina, por_pagina, orden, invertir)
 
 
+@router.get("/{escaneo_id}/por-tipo")
+def por_tipo(escaneo_id: int, riesgo: str = "", tipo: str = "", buscar: str = "",
+             pagina: int = Query(1, ge=1), por_pagina: int = Query(50, ge=1, le=200),
+             db: Session = Depends(get_db)):
+    """Hallazgos como planilla: una columna por tipo de dato (RUT, correo, teléfono...), enmascarados.
+
+    Usa los mismos filtros que /hallazgos. La página n trae los hallazgos n de cada columna.
+    """
+    return repositorio.por_tipo(db, escaneo_id, riesgo, tipo, buscar, pagina, por_pagina)
+
+
 @router.delete("/{escaneo_id}", status_code=204)
 def borrar(escaneo_id: int, db: Session = Depends(get_db)):
     if not repositorio.borrar(db, escaneo_id):
