@@ -1,10 +1,11 @@
 """Consultas sobre la base interna: guardar escaneos y leer sus resultados."""
 
-from sqlalchemy import case, func, select
+from sqlalchemy import case, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from ksecure.almacenamiento import boveda
 from ksecure.almacenamiento.modelos import Escaneo, Hallazgo
+from ksecure.almacenamiento.usuarios import ahora
 from ksecure.core.models import RiskLevel
 from ksecure.escaneo.resultado import ResultadoEscaneo
 
@@ -13,6 +14,11 @@ ORDEN_RIESGO = [RiskLevel.RESTRINGIDO.value, RiskLevel.CONFIDENCIAL.value,
                 RiskLevel.INTERNO.value, RiskLevel.PUBLICO.value]
 # Al ordenar por tipo: primero lo que identifica a una persona o permite un fraude. Las reglas personalizadas van al final.
 ORDEN_TIPOS = ["RUT", "TARJETA_PAGO", "CUENTA_BANCARIA", "SECRETO", "TELEFONO", "EMAIL", "PATENTE"]
+# Revisión de hallazgos (RF-16). En la base, "pendiente" es la columna vacía.
+PENDIENTE, CONFIRMADO, FALSO_POSITIVO = "pendiente", "confirmado", "falso_positivo"
+ESTADOS = (PENDIENTE, CONFIRMADO, FALSO_POSITIVO)
+SIN_FALSOS = "sin_falsos"  # filtro: todo menos los falsos positivos
+MAX_NOTA = 200
 
 
 def _lugar_en(columna, valores: list[str]):
@@ -117,9 +123,13 @@ def detalle(db: Session, escaneo_id: int) -> dict | None:
         return None
     por_tipo = dict(db.execute(select(Hallazgo.tipo, func.count()).where(Hallazgo.escaneo_id == e.id)
                                .group_by(Hallazgo.tipo).order_by(func.count().desc())).all())
+    revision = dict(db.execute(select(Hallazgo.revision, func.count()).where(Hallazgo.escaneo_id == e.id)
+                               .group_by(Hallazgo.revision)).all())
     return {
         **_resumen(db, e),
         "por_tipo": por_tipo,
+        "revision": {PENDIENTE: revision.get(None, 0), CONFIRMADO: revision.get(CONFIRMADO, 0),
+                     FALSO_POSITIVO: revision.get(FALSO_POSITIVO, 0)},
         "fuentes": len(e.filas_por_fuente) or len({h.fuente for h in e.hallazgos}),
         "filas_revisadas": sum(e.filas_por_fuente.values()),
         "columnas": columnas_sensibles(db, e),
@@ -127,9 +137,15 @@ def detalle(db: Session, escaneo_id: int) -> dict | None:
     }
 
 
-def _filtros(escaneo_id: int, riesgo: str, tipo: str, buscar: str) -> list:
-    """Condiciones comunes a la tabla de hallazgos y a la vista por tipo."""
+def _filtros(escaneo_id: int, riesgo: str, tipo: str, buscar: str, revision: str = "") -> list:
+    """Condiciones comunes a la tabla de hallazgos, la vista por tipo, exportar y revisar varios."""
     condiciones = [Hallazgo.escaneo_id == escaneo_id]
+    if revision == PENDIENTE:
+        condiciones.append(Hallazgo.revision.is_(None))
+    elif revision in (CONFIRMADO, FALSO_POSITIVO):
+        condiciones.append(Hallazgo.revision == revision)
+    elif revision == SIN_FALSOS:
+        condiciones.append(or_(Hallazgo.revision.is_(None), Hallazgo.revision != FALSO_POSITIVO))
     if riesgo:
         condiciones.append(Hallazgo.riesgo == riesgo)
     if tipo:
@@ -147,26 +163,40 @@ def _item(h: Hallazgo) -> dict:
         "tipo": h.tipo, "riesgo": h.riesgo, "confianza": h.confianza,
         "nivel_confianza": h.nivel_confianza, "contexto": h.contexto,
         "valor": h.valor_enmascarado,
+        "revision": h.revision or PENDIENTE, "revisado_por": h.revisado_por, "nota": h.nota_revision,
+        "revisado_en": h.revisado_en.isoformat(timespec="seconds") + "Z" if h.revisado_en else None,
     }
 
 
 def hallazgos(db: Session, escaneo_id: int, riesgo: str = "", tipo: str = "", buscar: str = "",
-              pagina: int = 1, por_pagina: int = 50, orden: str = "riesgo", invertir: bool = False) -> dict:
-    q = select(Hallazgo).where(*_filtros(escaneo_id, riesgo, tipo, buscar))
+              pagina: int = 1, por_pagina: int = 50, orden: str = "riesgo", invertir: bool = False,
+              revision: str = "") -> dict:
+    q = select(Hallazgo).where(*_filtros(escaneo_id, riesgo, tipo, buscar, revision))
     total = db.scalar(select(func.count()).select_from(q.subquery()))
     filas = db.scalars(q.order_by(*_orden_sql(orden, invertir)).offset((pagina - 1) * por_pagina).limit(por_pagina)).all()
     return {"total": total, "pagina": pagina, "por_pagina": por_pagina, "items": [_item(h) for h in filas]}
 
 
+def para_exportar(db: Session, escaneo_id: int, riesgo: str = "", tipo: str = "", buscar: str = "",
+                  revision: str = "") -> dict | None:
+    """Resumen del escaneo y todos sus hallazgos con estos filtros (enmascarados, del mayor riesgo al menor)."""
+    resumen = detalle(db, escaneo_id)
+    if resumen is None:
+        return None
+    q = select(Hallazgo).where(*_filtros(escaneo_id, riesgo, tipo, buscar, revision)).order_by(*_orden_sql("riesgo", False))
+    return {"escaneo": resumen, "filtros": {"riesgo": riesgo, "tipo": tipo, "buscar": buscar, "revision": revision},
+            "hallazgos": [_item(h) for h in db.scalars(q)]}
+
+
 def por_tipo(db: Session, escaneo_id: int, riesgo: str = "", tipo: str = "", buscar: str = "",
-             pagina: int = 1, por_pagina: int = 50) -> dict:
+             pagina: int = 1, por_pagina: int = 50, revision: str = "") -> dict:
     """Hallazgos como planilla: una columna por tipo de dato, cada una con sus valores enmascarados.
 
     Las columnas son independientes: la fila 1 del RUT y la fila 1 del correo pueden venir de lugares
     distintos. Todas comparten la paginación (la página n trae los hallazgos n de cada tipo), así que hay
     tantas páginas como necesite la columna más larga. Dentro de cada columna, primero el mayor riesgo.
     """
-    filtros = _filtros(escaneo_id, riesgo, tipo, buscar)
+    filtros = _filtros(escaneo_id, riesgo, tipo, buscar, revision)
     columnas: dict[str, dict] = {}
     for t, r, n in db.execute(select(Hallazgo.tipo, Hallazgo.riesgo, func.count())
                               .where(*filtros).group_by(Hallazgo.tipo, Hallazgo.riesgo)).all():
@@ -190,6 +220,36 @@ def por_tipo(db: Session, escaneo_id: int, riesgo: str = "", tipo: str = "", bus
         "paginas": max(1, -(-mas_larga // por_pagina)),  # división hacia arriba
         "columnas": lista,
     }
+
+
+def _marca(estado: str, quien, nota: str | None) -> dict:
+    """Los campos de la revisión. Volver a "pendiente" borra quién, cuándo y por qué."""
+    if estado not in ESTADOS:
+        raise ValueError("Estado de revisión no válido")
+    if estado == PENDIENTE:
+        return {"revision": None, "revisado_por": None, "revisado_en": None, "nota_revision": None}
+    nota = " ".join((nota or "").split())[:MAX_NOTA] or None
+    return {"revision": estado, "revisado_por": quien.usuario, "revisado_en": ahora(), "nota_revision": nota}
+
+
+def revisar(db: Session, escaneo_id: int, hallazgo_id: int, estado: str, quien, nota: str | None = None) -> Hallazgo | None:
+    """Marca un hallazgo como confirmado, falso positivo o de nuevo pendiente."""
+    h = db.get(Hallazgo, hallazgo_id)
+    if h is None or h.escaneo_id != escaneo_id:
+        return None
+    for campo, valor in _marca(estado, quien, nota).items():
+        setattr(h, campo, valor)
+    db.commit()
+    return h
+
+
+def revisar_filtrados(db: Session, escaneo_id: int, estado: str, quien, nota: str | None = None, riesgo: str = "",
+                      tipo: str = "", buscar: str = "", revision: str = "") -> int:
+    """Marca de una vez todos los hallazgos que cumplen los filtros (ej. una columna completa). Devuelve cuántos."""
+    resultado = db.execute(update(Hallazgo).where(*_filtros(escaneo_id, riesgo, tipo, buscar, revision))
+                           .values(**_marca(estado, quien, nota)).execution_options(synchronize_session=False))
+    db.commit()
+    return resultado.rowcount
 
 
 def borrar(db: Session, escaneo_id: int) -> bool:

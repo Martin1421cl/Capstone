@@ -38,6 +38,7 @@ Los validadores incluidos se pueden apagar o sumarles palabras de contexto.
 ```
 ksecure/
 ├── core/models.py          # Match, ContextInfo, ConfidenceLevel, RiskLevel
+├── core/texto.py           # nombres de los tipos, CSV para Excel (sin fórmulas), nombres de archivo
 ├── validators/             # QUÉ es sensible (uno por tipo de dato, con enmascarado propio)
 │   ├── base.py             #   Clase base: contexto, nombre de columna como pista, enmascarado
 │   ├── rut.py · telefono.py · tarjeta.py · email.py
@@ -58,15 +59,17 @@ ksecure/
 │   ├── modelos.py · db.py  #   tablas de la base interna (SQLite local o KSECURE_DB_URL)
 │   ├── boveda.py           #   cifrado de originales con la clave de auditor
 │   ├── usuarios.py         #   cuentas, roles, contraseñas (bcrypt), bloqueo y sesiones
+│   ├── bitacora.py         #   bitácora: quién hizo qué y cuándo (RF-17)
 │   ├── repositorio.py      #   guardar, listar, resumir, columnas sensibles, revelar
 │   └── reglas.py           #   mantenedor de reglas: guarda reglas y arma los validadores activos
 ├── correo.py               # envío de correos (código para recuperar la contraseña)
+├── exportar.py             # resultados en CSV, JSON y PDF (siempre enmascarados)
 ├── restablecer.py          # plan B: contraseña temporal desde la terminal
 └── web/                    # CÓMO se muestra
     ├── app.py              #   FastAPI: monta la API y las páginas
     ├── sesion.py           #   login: exige sesión en toda la web y revisa el rol de cada endpoint
-    ├── api/                #   sesion.py · usuarios.py · escanear.py · resultados.py · auditor.py · reglas.py
-    └── static/             #   login, index, archivos, base-datos, resultados, historial, reglas, usuarios
+    ├── api/                #   sesion.py · usuarios.py · escanear.py · resultados.py · auditor.py · reglas.py · bitacora.py · seguridad.py
+    └── static/             #   login, index, archivos, base-datos, resultados, historial, reglas, seguridad, usuarios, bitacora
 tests/
 ```
 
@@ -85,6 +88,20 @@ uvicorn ksecure.web.app:app
 Abrir http://localhost:8000. La primera vez se pide **crear la cuenta de administrador**; desde
 **Usuarios** se crean las demás cuentas y la **clave de auditor** (sin ella no se puede escanear).
 La API queda documentada en http://localhost:8000/docs (con sesión iniciada).
+
+**Revisión de hallazgos:** un Auditor o Admin marca cada hallazgo como **Confirmado** o **Falso positivo**
+(con su motivo), uno por uno en la vista Detalle o todos los del filtro de una vez. Resultados muestra el
+avance, se puede filtrar por estado y exportar sin los falsos positivos. Cada marca queda en la bitácora.
+
+**Exportar:** en **Resultados**, el botón **Exportar** descarga los hallazgos con los filtros de la
+pantalla en CSV (Excel), JSON (otros sistemas) o PDF (reporte). Siempre enmascarados y anotado en la bitácora.
+
+**Seguridad:** la página **Seguridad** explica, con un ejemplo en vivo, la diferencia entre enmascarar,
+cifrar y hashear, y cómo funciona la bóveda.
+
+**Bitácora:** el Admin ve en **Bitácora** quién hizo qué y cuándo: ingresos (y los fallidos), cambios de
+cuentas, cada dato original que alguien vio, escaneos y cambios de reglas. Se puede filtrar y descargar
+en CSV. Nunca guarda un dato original ni una contraseña, y no se puede editar ni borrar desde la web.
 
 **¿Olvidaste tu contraseña?** En el login se pide un código de 6 dígitos que llega al correo de la cuenta
 (vence en 10 minutos). Si el envío de correos no está configurado (ver más abajo), el código aparece en

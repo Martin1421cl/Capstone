@@ -611,8 +611,30 @@ dialog.ancho-medio .opciones { grid-template-columns: repeat(auto-fit, minmax(16
 /* Interruptores de solo lectura (reglas para Visor y Auditor) */
 .switch:has(input:disabled) { cursor: default; }
 .switch input:disabled + .pista { opacity: .45; }
+/* Página Bitácora: un color por tipo de acción, las alertas en rojo */
+.cat-alertas { --risk: var(--restringido); }
+.cat-datos { --risk: var(--confidencial); }
+.cat-escaneos { --risk: var(--cyan); }
+.cat-sesion { --risk: var(--interno); }
+.cat-cuentas { --risk: #b197fc; }
+.cat-reglas { --risk: var(--publico); }
+.tabla-bitacora td { vertical-align: top; }
+.tabla-bitacora td.detalle { white-space: normal; min-width: 280px; overflow-wrap: anywhere; }
+.tabla-bitacora td .muted { font-size: .82rem; }
+.tabla-bitacora td.ip { font-family: ui-monospace, monospace; font-size: .82rem; }
+.tabla-bitacora tr.alerta td:first-child { box-shadow: inset 3px 0 0 var(--restringido); }
+
 @media (max-width: 800px) {
   /* En celular cada cuenta es una tarjeta: sin tabla que se salga de la pantalla. */
+  /* La bitácora también: un evento por tarjeta. */
+  .tabla-bitacora thead { display: none; }
+  .tabla-bitacora, .tabla-bitacora tbody, .tabla-bitacora tr, .tabla-bitacora td { display: block; width: 100%; }
+  .tabla-bitacora tr { padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  .tabla-bitacora td { border: 0; padding: 3px 0; white-space: normal; }
+  .tabla-bitacora td.detalle { min-width: 0; }
+  .tabla-bitacora tr.alerta td:first-child { box-shadow: none; }
+  .tabla-bitacora tr.alerta { box-shadow: inset 3px 0 0 var(--restringido); }
+  .tabla-bitacora td[data-label="Quién"] > div { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
   .tabla-usuarios thead { display: none; }
   .tabla-usuarios, .tabla-usuarios tbody, .tabla-usuarios tr, .tabla-usuarios td { display: block; width: 100%; }
   .tabla-usuarios tr { padding: 14px 16px; border-bottom: 1px solid var(--border); }
@@ -625,3 +647,125 @@ dialog.ancho-medio .opciones { grid-template-columns: repeat(auto-fit, minmax(16
   .acciones-fila .btn { margin: 6px 6px 0 0; }
   .clave-temporal { grid-template-columns: 1fr; }
 }
+
+/* Notebooks (801–1240 px): menú más compacto para que logo, menú y cuenta quepan en una fila. */
+@media (min-width: 801px) and (max-width: 1240px) {
+  .site-header .container { gap: 14px; }
+  .nav { gap: 2px; }
+  .nav a { padding: 7px 10px; font-size: .9rem; }
+  .menu-cuenta .quien { display: none; }  /* queda el círculo con las iniciales, como en celular */
+}
+@media (min-width: 801px) and (max-width: 960px) {
+  .brand img { height: 32px; }
+  .nav a { padding: 6px 8px; font-size: .86rem; }
+}
+
+/* --- Página Seguridad ----------------------------------------------------------- */
+.recorrido { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; counter-reset: paso; }
+.recorrido li { position: relative; padding: 18px; }
+.recorrido li:not(:last-child)::after {  /* flecha hacia el siguiente paso */
+  content: "→"; position: absolute; right: -13px; top: 38px; color: var(--cyan); font-weight: 700; z-index: 1;
+}
+.recorrido .icon-badge { width: 44px; height: 44px; margin-bottom: 12px; }
+.recorrido .icon-badge svg { width: 22px; height: 22px; }
+.recorrido h3 { margin: 0 0 6px; font-size: 1rem; }
+.recorrido p { margin: 0; font-size: .86rem; }
+.recorrido .numero, .pasos-boveda .numero {
+  display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; flex: none;
+  font: 700 .78rem var(--font-title); background: var(--cyan); color: #021014;
+}
+.recorrido .numero { position: absolute; top: 14px; right: 14px; }
+.tec-mascara { --risk: var(--publico); }
+.tec-cifrado { --risk: var(--confidencial); }
+.tec-hash { --risk: #b197fc; }
+.tecnica { border-top: 3px solid var(--risk); display: flex; flex-direction: column; }
+.tecnica .icon-badge { color: var(--risk); background: color-mix(in srgb, var(--risk) 12%, transparent); border-color: color-mix(in srgb, var(--risk) 40%, transparent); }
+.tecnica h3 { margin: 0 0 4px; }
+.tecnica > p { margin: 0 0 14px; }
+.tecnica .muestra {
+  display: block; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border);
+  color: var(--risk); font: 600 1rem ui-monospace, Consolas, monospace; margin-bottom: 14px;
+}
+.tecnica dl { margin: 0; font-size: .86rem; }
+.tecnica dt { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; margin-top: 8px; }
+.tecnica dd { margin: 2px 0 0; }
+.demo-form { display: flex; gap: 10px; margin-bottom: 14px; }
+.demo-form input { flex: 1; font-family: ui-monospace, Consolas, monospace; font-size: 1.05rem; }
+.demo-seguridad .ejemplos { margin: 0 0 16px; }
+.demo-aviso { margin: 0 0 14px; font-size: .9rem; }
+.demo-salidas { display: grid; gap: 12px; }
+.salida { padding: 12px 14px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); border-left: 3px solid var(--risk); animation: entrar .3s var(--ease) both; }
+.salida-titulo { font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--risk); font-weight: 600; margin-bottom: 4px; }
+.salida code { display: block; font: .95rem ui-monospace, Consolas, monospace; color: var(--text); overflow-wrap: anywhere; }
+.salida p { margin: 6px 0 0; font-size: .84rem; }
+.por-que h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; }
+.por-que h3 svg { width: 20px; height: 20px; flex: none; }
+.por-que.no h3 svg { color: var(--restringido); }
+.por-que.si h3 svg { color: var(--publico); }
+.por-que ul { margin: 0; padding-left: 18px; display: grid; gap: 8px; font-size: .92rem; }
+.pasos-boveda { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.pasos-boveda li { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border); }
+.pasos-boveda p { margin: 4px 0 0; font-size: .9rem; }
+.lista-check.columnas-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px 24px; --risk: var(--cyan); }
+@media (max-width: 1000px) {
+  .recorrido { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+  .recorrido li::after { display: none; }
+}
+@media (max-width: 520px) {
+  .demo-form { flex-direction: column; }
+}
+
+/* --- Exportar resultados (Resultados) ------------------------------------------------ */
+/* La animación de entrada apila cada bloque por separado: la cabecera va encima para que su menú no quede tapado. */
+.cabecera-resultados { position: relative; z-index: 5; }
+.acciones-escaneo { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.menu-exportar { position: relative; }
+.menu-exportar summary { list-style: none; }
+.menu-exportar summary::-webkit-details-marker { display: none; }
+.menu-exportar summary svg { width: 18px; height: 18px; }
+.menu-exportar[open] summary { border-color: var(--cyan); box-shadow: var(--shadow-glow); }
+.menu-exportar .menu {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; width: 290px; padding: 8px;
+  background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 14px;
+  box-shadow: 0 24px 60px -18px #000; animation: entrar .2s var(--ease);
+}
+.menu-exportar .nota { margin: 4px 10px 8px; font-size: .8rem; color: var(--muted); }
+.menu-exportar a {
+  display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 8px; color: var(--text);
+}
+.menu-exportar a svg { width: 18px; height: 18px; flex: none; color: var(--cyan); }
+.menu-exportar a span { display: grid; line-height: 1.25; }
+.menu-exportar a small { font-size: .78rem; }
+.menu-exportar a:hover, .menu-exportar a:focus-visible { background: var(--cyan-soft); color: var(--cyan); }
+@media (max-width: 520px) { .menu-exportar .menu { left: 0; right: auto; } }
+
+/* --- Revisión de hallazgos (RF-16) ------------------------------------------------------ */
+:root { --rev-pendiente: #ffd43b; --rev-confirmado: #63e6be; --rev-falso: #a5b4bb; }
+.badge.rev-pendiente { --risk: var(--rev-pendiente); }
+.badge.rev-confirmado { --risk: var(--rev-confirmado); }
+.badge.rev-falso_positivo { --risk: var(--rev-falso); }
+.cat-revision { --risk: var(--rev-confirmado); }
+.revision-resumen { margin-top: 20px; display: grid; gap: 12px; }
+.revision-titulo { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.revision-titulo h2 { margin: 0; font-size: 1.15rem; }
+.barra-revision { display: flex; height: 10px; border-radius: 99px; overflow: hidden; background: color-mix(in srgb, var(--rev-pendiente) 22%, var(--surface-2)); }
+.barra-revision span { display: block; height: 100%; transition: width .8s var(--ease); }
+.barra-revision .rev-confirmado { background: var(--rev-confirmado); }
+.barra-revision .rev-falso_positivo { background: var(--rev-falso); }
+.chips-revision { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip-revision {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 99px; cursor: pointer;
+  font: 500 .85rem var(--font-body); color: var(--text); background: var(--surface); border: 1px solid var(--border);
+}
+.chip-revision::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--chip); }
+.chip-revision.rev-pendiente { --chip: var(--rev-pendiente); }
+.chip-revision.rev-confirmado { --chip: var(--rev-confirmado); }
+.chip-revision.rev-falso_positivo { --chip: var(--rev-falso); }
+.chip-revision:hover, .chip-revision[aria-pressed="true"] { border-color: var(--chip); background: color-mix(in srgb, var(--chip) 12%, transparent); }
+.ayuda-revision { margin: 0; font-size: .84rem; }
+.celda-revision { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; min-width: 210px; }
+.celda-revision .rev-info { font-size: .78rem; margin-top: 4px; max-width: 200px; white-space: normal; overflow-wrap: anywhere; }
+.rev-acciones { display: flex; gap: 4px; flex: none; }
+.rev-acciones .btn svg { width: 15px; height: 15px; }
+tr.rev-falso_positivo .valor, .celda-tipo.rev-falso_positivo .valor-texto { text-decoration: line-through; opacity: .5; }
+.celda-tipo.rev-confirmado .valor-texto::after { content: " ✓"; color: var(--rev-confirmado); font-weight: 700; }

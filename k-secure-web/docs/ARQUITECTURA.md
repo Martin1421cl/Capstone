@@ -72,11 +72,11 @@ y lectura de planillas como tablas.
 | API web | **FastAPI** + Uvicorn | Documentación automática en `/docs`, validación con Pydantic |
 | Base interna | **SQLAlchemy 2** sobre SQLite (local) o **PostgreSQL en Neon** (nube) | La misma lógica funciona en ambos |
 | Cifrado | **cryptography** (RSA-OAEP 2048 + Fernet/AES) | Librería estándar de la industria |
-| PDF | **pypdf** | Texto, formularios y metadata |
+| PDF | **pypdf** (leer) y **reportlab** (generar reportes) | Leer PDFs al escanear; crear el reporte de resultados |
 | Excel antiguo | **xlrd** | Único formato que no se lee con la biblioteca estándar |
 | Drivers de BD | psycopg 3, PyMySQL, pymssql, oracledb | Uno por motor soportado |
 | Frontend | HTML + CSS + JavaScript **sin frameworks** (módulos ES) | Sin compilación, fácil de entender y de desplegar |
-| Pruebas | **pytest** (137 tests) | — |
+| Pruebas | **pytest** (210 tests) | — |
 | Nube | **Render** (servidor, gratis) + **Neon** (PostgreSQL, gratis), ambos en Ohio (AWS us-east-2) | Gratis y con despliegue automático desde GitHub |
 
 Tamaño: ~2.700 líneas de Python, ~1.800 de HTML/CSS/JS, ~840 de tests.
@@ -91,6 +91,7 @@ Tamaño: ~2.700 líneas de Python, ~1.800 de HTML/CSS/JS, ~840 de tests.
 k-secure-web/ksecure/
 │
 ├── core/models.py        MODELOS COMUNES: Match, ContextInfo, ConfidenceLevel, RiskLevel
+├── core/texto.py         Nombres de los tipos, CSV para Excel sin fórmulas, nombres de archivo
 │
 ├── validators/           QUÉ ES SENSIBLE
 │   ├── base.py             Clase base: busca, aplica contexto, calcula confianza, enmascara
@@ -116,17 +117,19 @@ k-secure-web/ksecure/
 │   ├── db.py               Conexión, creación y actualización automática de tablas
 │   ├── boveda.py           Cifrado de originales con la clave de auditor
 │   ├── usuarios.py         Cuentas, roles, contraseñas (bcrypt), bloqueo y sesiones
+│   ├── bitacora.py         Bitácora: anota eventos, filtra, resume y exporta a CSV
 │   ├── repositorio.py      Guardar, listar, resumir, columnas sensibles, ordenar, revelar
 │   └── reglas.py           Mantenedor: valida, guarda reglas y arma los validadores activos
 │
 ├── correo.py             Envío de correos por el Apps Script del equipo (código para recuperar la contraseña)
+├── exportar.py           Resultados en CSV (Excel), JSON (otros sistemas) y PDF (reporte), siempre enmascarados
 ├── restablecer.py        Plan B: contraseña temporal desde la terminal, sin entrar a la web
 │
 └── web/                  CÓMO SE MUESTRA
     ├── app.py              Crea la app FastAPI y monta API + páginas
     ├── sesion.py           Login: exige sesión en toda la web y revisa el rol en cada endpoint
-    ├── api/                sesion.py · usuarios.py · escanear.py · resultados.py · auditor.py · reglas.py
-    └── static/             login, index, archivos, base-datos, resultados, historial, reglas, usuarios (.html)
+    ├── api/                sesion.py · usuarios.py · escanear.py · resultados.py · auditor.py · reglas.py · bitacora.py · seguridad.py
+    └── static/             login, index, archivos, base-datos, resultados, historial, reglas, seguridad, usuarios, bitacora (.html)
                             + css/ksecure.css + js/ (un módulo por página + api.js + ui.js)
 ```
 
@@ -284,6 +287,12 @@ enmascarados y datos cifrados que no puede abrir sin la clave del auditor.
 | Recuperar la contraseña: código de 6 dígitos al correo, guardado con bcrypt, vence a los 10 min, sirve una vez y se anula tras 5 intentos | `almacenamiento/usuarios.py` |
 | "¿Olvidaste tu contraseña?" responde lo mismo exista o no la cuenta (el correo se manda después de responder), así no delata usuarios | `web/api/sesion.py` |
 | Máximo 1 código por minuto y 5 por hora por cuenta, y 80 al día en total (cuida el cupo de Gmail) | `almacenamiento/usuarios.py` |
+| **Bitácora** de ingresos, cuentas, datos originales vistos, escaneos y reglas, con IP; cada original queda anotado antes de mostrarse | `almacenamiento/bitacora.py`, `web/sesion.py` (`anotar`) |
+| La bitácora nunca guarda un original ni una contraseña (del hallazgo anota el valor enmascarado; de un usuario inexistente no anota lo escrito) | `almacenamiento/bitacora.py` |
+| La bitácora es solo lectura y solo Admin: la API no tiene cómo editar ni borrar eventos | `web/api/bitacora.py` |
+| Los CSV (bitácora y resultados) marcan las celdas que Excel tomaría como fórmula (inyección CSV) | `core/texto.py` |
+| Revisión de hallazgos: solo Auditor y Admin marcan; cada marca (con quién y el motivo) queda en la bitácora | `web/api/resultados.py` |
+| Exportar resultados: siempre enmascarado (el PDF, el CSV y el JSON solo llevan lo que se ve en pantalla) y anotado en la bitácora | `exportar.py`, `web/api/resultados.py` |
 | El servicio de correo exige un secreto compartido; las pruebas nunca mandan correos reales | `correo.py`, `tests/conftest.py` |
 | 5 claves de auditor incorrectas seguidas bloquean 1 minuto, por cuenta | `web/api/auditor.py` |
 | El dato revelado se vuelve a ocultar a los 20 s | `static/js/resultados.js` |
@@ -322,12 +331,13 @@ Por dentro: cada regla se guarda en la tabla `reglas` y se convierte en un `Regl
 |---|---|
 | `configuracion` | Llave pública y llave privada cifrada de la bóveda |
 | `escaneos` | Origen (archivo/bd), nombre, fecha, filas revisadas por tabla, errores, llave AES cifrada |
-| `hallazgos` | Fuente, columna, posición, número de línea/fila, tipo, riesgo, confianza, contexto, **valor enmascarado**, **valor cifrado** |
+| `hallazgos` | Fuente, columna, posición, número de línea/fila, tipo, riesgo, confianza, contexto, **valor enmascarado**, **valor cifrado**, **revisión** (confirmado / falso positivo, quién, cuándo y motivo) |
 | `reglas` | Reglas personalizadas (patrón, ejemplos, validación, palabras, riesgo, confianza, visibles, activa) |
 | `ajustes_validadores` | Validadores incluidos: activo/apagado y palabras extra |
 | `usuarios` | Cuentas: usuario, nombre, correo, rol, **hash bcrypt** de la contraseña, bloqueo, último ingreso |
 | `sesiones` | Sesiones abiertas: **hash SHA-256** del token de la cookie, último uso y vencimiento |
 | `codigos_recuperacion` | Códigos para recuperar la contraseña: **hash bcrypt**, vencimiento, intentos, usado |
+| `bitacora` | Eventos: fecha, acción, categoría, alerta, quién (copia de usuario y nombre), cuenta afectada, detalle, IP, escaneo |
 
 Las tablas se crean solas al arrancar, y si una versión nueva agrega columnas, `db.py` las suma a una
 base existente sin perder datos.
@@ -345,6 +355,8 @@ base existente sin perder datos.
 | POST | `/api/sesion/recuperar/confirmar` | Con el código, crear la contraseña nueva e iniciar sesión |
 | GET / POST / PUT | `/api/usuarios` · `/{id}` · `/{id}/restablecer` | Administrar cuentas (solo Admin) |
 | POST | `/api/usuarios/correo-prueba` | Mandar un correo de prueba al administrador (solo Admin) |
+| POST | `/api/seguridad/ejemplo` | Ejemplo en vivo para la página Seguridad: enmascara, cifra (llave desechable) y hashea un texto corto; no guarda nada |
+| GET | `/api/bitacora` · `/resumen` · `/csv` | Bitácora con filtros y páginas, cifras de 7 días y descarga CSV (solo Admin, solo lectura) |
 | GET / POST | `/api/auditor` | Ver si existe la clave de auditor / crearla (una sola vez) |
 | POST | `/api/archivos` | Subir y escanear uno o varios archivos |
 | GET | `/api/bd/motores` | Motores soportados |
@@ -352,6 +364,9 @@ base existente sin perder datos.
 | POST | `/api/bd/escanear` | Escanear tablas de una base |
 | GET | `/api/escaneos` | Historial |
 | GET | `/api/escaneos/{id}` | Resumen: por riesgo, por tipo, columnas sensibles, errores |
+| PUT | `/api/escaneos/{id}/hallazgos/{hallazgo}/revision` | Marcar un hallazgo: confirmado, falso positivo (con motivo) o pendiente (Auditor y Admin) |
+| POST | `/api/escaneos/{id}/revision` | Marcar de una vez todos los hallazgos que cumplen los filtros (Auditor y Admin) |
+| GET | `/api/escaneos/{id}/exportar` | Descargar los hallazgos en CSV, JSON o PDF (`formato`), con los mismos filtros, siempre enmascarados |
 | GET | `/api/escaneos/{id}/hallazgos` | Hallazgos enmascarados con filtros (`riesgo`, `tipo`, `buscar`), orden (`orden` = riesgo/tipo/confianza/ubicacion, `invertir`) y paginación |
 | DELETE | `/api/escaneos/{id}` | Borrar un escaneo y sus originales cifrados |
 | POST | `/api/hallazgos/{id}/revelar` | Ver un original (requiere la clave de auditor) |
@@ -374,9 +389,12 @@ mouse (tarjetas que se elevan, luz que sigue al cursor, radar mientras escanea) 
 | **Inicio** | Qué hace K-Secure, accesos directos, cómo funciona, qué detecta, últimos escaneos |
 | **Archivos** | Arrastrar y soltar varios archivos |
 | **Base de datos** | Asistente: motor → conexión → tablas |
-| **Resultados** | Tarjetas por riesgo (filtran al hacer clic), gráfico por tipo, **columnas sensibles** con %, tabla de hallazgos con filtros, **orden por encabezado** y botón 👁 |
+| **Resultados** | Tarjetas por riesgo (filtran al hacer clic), gráfico por tipo, **columnas sensibles** con %, tabla de hallazgos con filtros, **orden por encabezado**, botón 👁, **revisión** (avance, filtro y marcas) y **Exportar** (CSV, JSON, PDF) |
 | **Historial** | Escaneos anteriores con barra de riesgo |
 | **Reglas** | Mantenedor de reglas y validadores |
+| **Seguridad** | Recorrido de un dato, enmascarar vs. cifrar vs. hashear con ejemplo en vivo, por qué el original se cifra y no se hashea, la bóveda y otras protecciones (todos los roles) |
+| **Usuarios** | Cuentas y roles, clave de auditor, estado del correo (solo Admin) |
+| **Bitácora** | Quién hizo qué y cuándo: cifras de 7 días (alertas, datos vistos, escaneos, ingresos), filtros y CSV (solo Admin) |
 
 ---
 
@@ -405,7 +423,7 @@ GitHub (Capstone, main) ──push──► Render (servidor Python, Ohio) ◄�
 
 ## 13. Pruebas
 
-**179 tests automáticos** (`pytest`, en `k-secure-web/tests/`):
+**210 tests automáticos** (`pytest`, en `k-secure-web/tests/`):
 
 | Archivo | Tests | Qué cubre |
 |---|---|---|
@@ -415,6 +433,10 @@ GitHub (Capstone, main) ──push──► Render (servidor Python, Ohio) ◄�
 | `test_reglas.py` | 23 | Reglas personalizadas, patrón desde ejemplos, validadores incluidos, actualización de tablas |
 | `test_web.py` | 16 | API completa: bóveda, revelar, bloqueo, SQLite, historial, orden, vista por tipo, primer administrador, URL de Neon |
 | `test_sesion.py` | 20 | Login: ninguna ruta abierta, roles, bloqueo, contraseña temporal, vencimiento, cookie, último administrador, plan B |
+| `test_bitacora.py` | 13 | Bitácora: qué se anota, sin datos originales ni contraseñas, solo Admin, filtros, CSV |
+| `test_revision.py` | 7 | Revisión: marcar uno y varios, deshacer, filtros, permisos, bitácora, exportar, base anterior |
+| `test_exportar.py` | 7 | Exportar: CSV para Excel, JSON, PDF, filtros, sin originales, bitácora, sin fórmulas |
+| `test_seguridad.py` | 4 | Página Seguridad: enmascarado igual al de los escaneos, cifrado distinto cada vez, hash igual |
 | `test_recuperar.py` | 18 | Recuperar por correo: código, vencimiento, intentos, límites, no delatar cuentas, envío por Apps Script |
 | `test_cliente_simulado.py` | 3 | Cliente simulado: datos válidos y lo que K-Secure debe encontrar |
 
@@ -438,6 +460,10 @@ ejemplo) y recorriendo la interfaz en un navegador automatizado.
 | 9. Vista por tipo y cliente simulado | Hallazgos en columnas por tipo de dato; base ficticia de una empresa en Neon para las pruebas |
 | 10. Login con roles | Cuentas Admin / Auditor / Visor sin registro público, contraseñas bcrypt, sesiones que vencen |
 | 11. Recuperar contraseña | Código de 6 dígitos al correo, enviado por Apps Script desde el Gmail del equipo |
+| 12. Bitácora | Quién hizo qué y cuándo, con filtros y descarga CSV, solo para Admin |
+| 13. Página Seguridad | Enmascarar, cifrar y hashear explicados en la web, con un ejemplo en vivo (pedido del profesor) |
+| 14. Exportar resultados | CSV, JSON y PDF con los filtros de la pantalla, siempre enmascarados |
+| 15. Revisión de hallazgos | Confirmado / falso positivo con motivo, uno a uno o por filtro, con avance y en la bitácora |
 
 ---
 
@@ -448,14 +474,15 @@ ejemplo) y recorriendo la interfaz en un navegador automatizado.
 | Pasar a aplicación web (no .exe) | ✅ En la nube |
 | Filtrar y ordenar resultados | ✅ |
 | Mantenedor paramétrico de reglas | ✅ (ingreso de ejemplos en mejora) |
-| Explicar enmascarado vs. hasheo | 🟡 Explicado en la sección 7; falta página en la web y HMAC para supresiones |
+| Explicar enmascarado vs. hasheo | ✅ Página **Seguridad** en la web, con ejemplo en vivo (y sección 7). Pendiente: HMAC para supresiones |
 
 ---
 
 ## 16. Limitaciones conocidas y próximos pasos
 
 **Limitaciones actuales**
-- Falta la bitácora de acciones (quién vio cada original).
+- La bitácora se protege con permisos (solo lectura desde la web), pero quien tenga acceso directo a la
+  base podría modificarla; una mejora sería encadenar cada evento con el hash del anterior.
 - Desde la nube solo se llega a bases que estén en internet (no a una base dentro de la red de una empresa).
 - No detecta: RUT sin guion o sin dígito verificador, texto dentro de imágenes o PDF escaneados (sin OCR),
   comentarios y notas al pie de Word, nombres y direcciones.
@@ -463,13 +490,12 @@ ejemplo) y recorriendo la interfaz en un navegador automatizado.
 - PostgreSQL: solo el esquema `public`. MySQL, SQL Server y Oracle no se han probado contra servidores reales.
 
 **Próximos pasos propuestos**
-1. **Bitácora:** registro de quién vio cada original y de los cambios de cuentas y reglas.
-2. **Supresiones con HMAC** y página "Seguridad" que explique enmascarado, cifrado y hasheo.
-3. **Conector para bases dentro de la empresa:** un programa que se instala en un servidor del cliente,
+1. **Recordar falsos positivos entre escaneos** (con HMAC, sin guardar el dato): que un falso positivo ya revisado no vuelva a aparecer como pendiente en el siguiente escaneo.
+2. **Conector para bases dentro de la empresa:** un programa que se instala en un servidor del cliente,
    escanea ahí mismo y envía solo resultados enmascarados y cifrados (como el *self-hosted integration
    runtime* de Microsoft Purview). La empresa no abre su firewall.
-4. **Exportar resultados** (CSV/JSON) para alimentar un DLP.
-5. Escaneos en segundo plano con progreso; RUT sin guion con contexto; comentarios de Office.
+3. **Comparar escaneos** del mismo origen: qué apareció, qué desapareció y qué se mantiene.
+4. Escaneos en segundo plano con progreso; RUT sin guion con contexto; comentarios de Office.
 
 ---
 

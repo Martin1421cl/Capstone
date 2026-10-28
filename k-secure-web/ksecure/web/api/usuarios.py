@@ -5,10 +5,11 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ksecure.almacenamiento import usuarios
+from ksecure.almacenamiento.modelos import Usuario
 from ksecure.almacenamiento.usuarios import ADMIN, ErrorUsuario
 from ksecure.correo import ErrorCorreo, mensaje_prueba
 from ksecure.web.api.dependencias import get_db
-from ksecure.web.sesion import requiere
+from ksecure.web.sesion import anotar, requiere
 
 router = APIRouter(prefix="/api/usuarios", tags=["usuarios"])
 solo_admin = requiere(ADMIN)
@@ -34,28 +35,42 @@ def listar(db: Session = Depends(get_db), _=Depends(solo_admin)):
 
 
 @router.post("", status_code=201)
-def crear(datos: CuentaNueva, db: Session = Depends(get_db), _=Depends(solo_admin)):
+def crear(datos: CuentaNueva, request: Request, db: Session = Depends(get_db), _=Depends(solo_admin)):
     """Crea la cuenta con una contraseña temporal, que se muestra solo esta vez."""
     try:
         cuenta, temporal = usuarios.crear_por_admin(db, datos.usuario, datos.nombre, datos.correo, datos.rol)
     except ErrorUsuario as e:
         raise HTTPException(400, str(e)) from None
+    anotar(request, db, "cuenta_creada", f"Cuenta @{cuenta.usuario} ({cuenta.nombre}) con rol {cuenta.rol}", afectado=cuenta)
     return {"usuario": usuarios.publico(cuenta), "clave_temporal": temporal}
 
 
+CAMPOS = (("nombre", "nombre"), ("correo", "correo"), ("rol", "rol"))
+
+
 @router.put("/{usuario_id}")
-def actualizar(usuario_id: int, datos: CambiosCuenta, db: Session = Depends(get_db), admin=Depends(solo_admin)):
+def actualizar(usuario_id: int, datos: CambiosCuenta, request: Request, db: Session = Depends(get_db),
+               admin=Depends(solo_admin)):
+    antes = db.get(Usuario, usuario_id)
+    antes = {c: getattr(antes, c) for c in ("nombre", "correo", "rol", "activo")} if antes else {}
     try:
         cuenta = usuarios.actualizar(db, usuario_id, admin, datos.nombre, datos.correo, datos.rol, datos.activo)
     except LookupError:
         raise HTTPException(404, "Usuario no encontrado") from None
     except ErrorUsuario as e:
         raise HTTPException(400, str(e)) from None
+    cambios = [f"{texto}: {antes[c] or '—'} → {getattr(cuenta, c) or '—'}"
+               for c, texto in CAMPOS if antes[c] != getattr(cuenta, c)]
+    if cambios:
+        anotar(request, db, "cuenta_editada", f"Cuenta @{cuenta.usuario}: " + "; ".join(cambios), afectado=cuenta)
+    if antes["activo"] != cuenta.activo:
+        anotar(request, db, "cuenta_activada" if cuenta.activo else "cuenta_desactivada", f"Cuenta @{cuenta.usuario}",
+               afectado=cuenta)
     return usuarios.publico(cuenta)
 
 
 @router.post("/{usuario_id}/restablecer")
-def restablecer(usuario_id: int, db: Session = Depends(get_db), admin=Depends(solo_admin)):
+def restablecer(usuario_id: int, request: Request, db: Session = Depends(get_db), admin=Depends(solo_admin)):
     """Nueva contraseña temporal (también desbloquea la cuenta y cierra sus sesiones)."""
     if usuario_id == admin.id:
         raise HTTPException(400, "Para tu propia cuenta usa «Cambiar contraseña» en el menú con tu nombre")
@@ -63,6 +78,7 @@ def restablecer(usuario_id: int, db: Session = Depends(get_db), admin=Depends(so
         cuenta, temporal = usuarios.restablecer(db, usuario_id)
     except LookupError:
         raise HTTPException(404, "Usuario no encontrado") from None
+    anotar(request, db, "clave_restablecida", f"Contraseña temporal nueva para @{cuenta.usuario}", afectado=cuenta)
     return {"usuario": usuarios.publico(cuenta), "clave_temporal": temporal}
 
 

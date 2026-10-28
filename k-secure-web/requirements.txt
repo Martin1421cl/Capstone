@@ -7,6 +7,7 @@ python-multipart>=0.0.20
 sqlalchemy>=2.0
 cryptography>=45.0
 bcrypt>=4.2
+reportlab>=4.2       # PDF de los resultados
 # Drivers de bases de datos del cliente
 psycopg[binary]>=3.2
 pymysql>=1.1

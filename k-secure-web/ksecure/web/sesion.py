@@ -13,7 +13,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from starlette.concurrency import run_in_threadpool
 
-from ksecure.almacenamiento import usuarios
+from ksecure.almacenamiento import bitacora, usuarios
 from ksecure.almacenamiento.modelos import Usuario
 from ksecure.almacenamiento.usuarios import ADMIN, AUDITOR, NIVEL
 
@@ -23,13 +23,36 @@ RECURSOS = ("/css/", "/js/", "/img/")  # estilos, scripts e imágenes: no tienen
 API_PUBLICA = {"/api/health", "/api/sesion", "/api/sesion/ingresar", "/api/sesion/configurar",
                "/api/sesion/recuperar", "/api/sesion/recuperar/confirmar"}
 API_CON_CLAVE_TEMPORAL = {"/api/sesion", "/api/sesion/salir", "/api/sesion/cambiar-clave"}
-PAGINAS_POR_ROL = {"/archivos.html": AUDITOR, "/base-datos.html": AUDITOR, "/usuarios.html": ADMIN}
+PAGINAS_POR_ROL = {"/archivos.html": AUDITOR, "/base-datos.html": AUDITOR, "/usuarios.html": ADMIN,
+                   "/bitacora.html": ADMIN}
 METODOS_SEGUROS = {"GET", "HEAD", "OPTIONS"}
 
 
 def es_https(request: Request) -> bool:
     # Render atiende el HTTPS y le pasa la petición a la app por HTTP, avisando en este encabezado.
     return request.headers.get("x-forwarded-proto", request.url.scheme) == "https"
+
+
+def ip_de(request: Request) -> str | None:
+    """IP de quien hace la petición. En Render llega en X-Forwarded-For (la primera es la del navegador).
+
+    Es referencial: un cliente podría inventar ese encabezado, pero sirve para ver de dónde vienen
+    los intentos fallidos.
+    """
+    reenviada = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    return reenviada or (request.client.host if request.client else None)
+
+
+_DE_LA_SESION = object()
+
+
+def anotar(request: Request, db, accion: str, detalle: str = "", usuario=_DE_LA_SESION, **extra):
+    """Anota en la bitácora una acción hecha desde la web, con su IP.
+
+    Por defecto la anota a nombre de la cuenta de la sesión; usuario=None la deja sin cuenta.
+    """
+    quien = getattr(request.state, "usuario", None) if usuario is _DE_LA_SESION else usuario
+    bitacora.registrar(db, accion, detalle, usuario=quien, ip=ip_de(request), **extra)
 
 
 def poner_cookie(respuesta, request: Request, token: str):

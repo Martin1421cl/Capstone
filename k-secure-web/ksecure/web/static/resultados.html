@@ -14,15 +14,23 @@
   <header id="site-header" class="site-header"></header>
 
   <main class="container">
-    <div class="section-title entrar">
+    <div class="section-title entrar cabecera-resultados">
       <div>
         <p class="muted" style="margin:0" id="meta"></p>
         <h1 style="margin:0;overflow-wrap:anywhere" id="titulo">Resultados</h1>
       </div>
-      <button class="btn btn-danger" id="borrar" type="button" hidden>Borrar escaneo</button>
+      <div class="acciones-escaneo">
+        <details class="menu-exportar" id="exportar">
+          <summary class="btn" id="exportar-boton">Exportar</summary>
+          <div class="menu" id="exportar-menu"></div>
+        </details>
+        <button class="btn btn-danger" id="borrar" type="button" hidden>Borrar escaneo</button>
+      </div>
     </div>
 
     <div class="grid grid-4" id="kpis" style="margin-top:24px"></div>
+
+    <div class="card revision-resumen entrar" id="revision"></div>
 
     <div class="grid grid-2 section" style="margin-top:24px">
       <div class="card">
@@ -55,7 +63,9 @@
         </div>
         <select id="filtro-riesgo" aria-label="Filtrar por riesgo"><option value="">Todos los riesgos</option></select>
         <select id="filtro-tipo" aria-label="Filtrar por tipo"><option value="">Todos los tipos</option></select>
+        <select id="filtro-revision" aria-label="Filtrar por revisión"><option value="">Toda la revisión</option></select>
         <input id="filtro-buscar" type="search" placeholder="Buscar archivo, tabla o columna" aria-label="Buscar">
+        <button class="btn btn-sm" id="revisar-varios" type="button" hidden></button>
         <span class="muted" id="info-orden" style="margin-left:auto;font-size:.88rem"></span>
       </div>
       <!-- Una columna por tipo de dato, como planilla. Las filas no relacionan columnas entre sí. -->
@@ -67,7 +77,7 @@
       </div>
       <div class="tabla-wrap" id="vista-detalle" hidden>
         <table>
-          <thead><tr><th data-orden="ubicacion">Dónde</th><th data-orden="tipo">Tipo</th><th>Dato</th><th data-orden="riesgo">Riesgo</th><th data-orden="confianza">Confianza</th><th>Contexto</th></tr></thead>
+          <thead><tr><th data-orden="ubicacion">Dónde</th><th data-orden="tipo">Tipo</th><th>Dato</th><th data-orden="riesgo">Riesgo</th><th data-orden="confianza">Confianza</th><th>Contexto</th><th>Revisión</th></tr></thead>
           <tbody id="hallazgos"></tbody>
         </table>
       </div>

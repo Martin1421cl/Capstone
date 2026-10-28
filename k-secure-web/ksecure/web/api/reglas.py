@@ -1,13 +1,15 @@
 """Endpoints del mantenedor de reglas: crear y ajustar validadores sin programar."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ksecure.almacenamiento import reglas
+from ksecure.almacenamiento.modelos import Regla
 from ksecure.validators.patron import generar_patron
 from ksecure.validators.regla import ReglaValidator
 from ksecure.web.api.dependencias import SOLO_ADMIN, VISOR_O_MAS, get_db
+from ksecure.web.sesion import anotar
 
 MAX_TEXTO_PRUEBA = 5000
 
@@ -50,36 +52,45 @@ def listar(db: Session = Depends(get_db)):
 
 
 @router.put("/incluidas/{nombre}", status_code=204, dependencies=[SOLO_ADMIN])
-def ajustar_incluido(nombre: str, datos: AjusteIn, db: Session = Depends(get_db)):
+def ajustar_incluido(nombre: str, datos: AjusteIn, request: Request, db: Session = Depends(get_db)):
     """Activa o desactiva un validador incluido y le suma palabras de contexto."""
     try:
         reglas.ajustar_incluido(db, nombre, datos.activo, datos.palabras_positivas, datos.palabras_negativas)
     except LookupError:
         raise HTTPException(404, "Validador no encontrado") from None
+    palabras = len(datos.palabras_positivas) + len(datos.palabras_negativas)
+    anotar(request, db, "validador_ajustado",
+           f"{nombre}: {'activo' if datos.activo else 'apagado'}, {palabras} palabras extra")
 
 
 @router.post("", status_code=201, dependencies=[SOLO_ADMIN])
-def crear(datos: ReglaIn, db: Session = Depends(get_db)):
+def crear(datos: ReglaIn, request: Request, db: Session = Depends(get_db)):
     try:
-        return reglas.guardar(db, datos.model_dump())
+        regla = reglas.guardar(db, datos.model_dump())
     except ValueError as e:
         raise _400(e) from e
+    anotar(request, db, "regla_creada", f"«{regla['nombre']}» (riesgo {regla['riesgo']})")
+    return regla
 
 
 @router.put("/{regla_id}", dependencies=[SOLO_ADMIN])
-def actualizar(regla_id: int, datos: ReglaIn, db: Session = Depends(get_db)):
+def actualizar(regla_id: int, datos: ReglaIn, request: Request, db: Session = Depends(get_db)):
     try:
-        return reglas.guardar(db, datos.model_dump(), regla_id)
+        regla = reglas.guardar(db, datos.model_dump(), regla_id)
     except LookupError:
         raise HTTPException(404, "Regla no encontrada") from None
     except ValueError as e:
         raise _400(e) from e
+    anotar(request, db, "regla_editada", f"«{regla['nombre']}» ({'activa' if regla['activa'] else 'apagada'})")
+    return regla
 
 
 @router.delete("/{regla_id}", status_code=204, dependencies=[SOLO_ADMIN])
-def borrar(regla_id: int, db: Session = Depends(get_db)):
+def borrar(regla_id: int, request: Request, db: Session = Depends(get_db)):
+    nombre = r.nombre if (r := db.get(Regla, regla_id)) else ""
     if not reglas.borrar(db, regla_id):
         raise HTTPException(404, "Regla no encontrada")
+    anotar(request, db, "regla_borrada", f"«{nombre}»")
 
 
 class EjemplosIn(BaseModel):

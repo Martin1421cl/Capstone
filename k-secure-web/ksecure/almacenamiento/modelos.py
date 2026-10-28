@@ -53,6 +53,11 @@ class Hallazgo(Base):
     contexto: Mapped[str] = mapped_column(Text, default="")    # palabras clave que influyeron
     valor_enmascarado: Mapped[str] = mapped_column(String(300))
     valor_cifrado: Mapped[bytes] = mapped_column(LargeBinary)
+    # Revisión (RF-16): sin valor = pendiente; "confirmado" (sí es un dato sensible) o "falso_positivo".
+    revision: Mapped[str | None] = mapped_column(String(20), index=True)
+    revisado_por: Mapped[str | None] = mapped_column(String(30))   # usuario, tal como era al revisar
+    revisado_en: Mapped[datetime | None] = mapped_column()           # UTC
+    nota_revision: Mapped[str | None] = mapped_column(String(200))   # por qué (sobre todo en falsos positivos)
 
     escaneo: Mapped[Escaneo] = relationship(back_populates="hallazgos")
 
@@ -147,3 +152,27 @@ class CodigoRecuperacion(Base):
     expira: Mapped[datetime] = mapped_column()
     intentos: Mapped[int] = mapped_column(Integer, default=0)
     usado: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class Evento(Base):
+    """Una línea de la bitácora (RF-17): quién hizo qué y cuándo.
+
+    Solo se agregan filas; K-Secure no tiene forma de editarlas ni borrarlas. Nunca guarda un dato
+    original ni una contraseña. Sin llaves foráneas a propósito: el evento queda aunque se borre el
+    escaneo, y guarda una copia del usuario y su nombre tal como eran en ese momento.
+    """
+
+    __tablename__ = "bitacora"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    fecha: Mapped[datetime] = mapped_column(index=True)                  # UTC
+    accion: Mapped[str] = mapped_column(String(40), index=True)
+    categoria: Mapped[str] = mapped_column(String(20), index=True)
+    alerta: Mapped[bool] = mapped_column(Boolean, default=False)         # intentos fallidos y bloqueos
+    usuario_id: Mapped[int | None] = mapped_column(index=True)           # quién lo hizo (o la cuenta atacada)
+    usuario: Mapped[str | None] = mapped_column(String(30))
+    nombre: Mapped[str | None] = mapped_column(String(80))
+    afectado_id: Mapped[int | None] = mapped_column(index=True)          # la cuenta sobre la que se actuó
+    detalle: Mapped[str] = mapped_column(String(500), default="")
+    ip: Mapped[str | None] = mapped_column(String(45))
+    escaneo_id: Mapped[int | None] = mapped_column()

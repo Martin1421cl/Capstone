@@ -49,13 +49,16 @@ class ErrorUsuario(ValueError):
 
 
 class CuentaBloqueada(Exception):
-    def __init__(self, minutos: int):
+    def __init__(self, minutos: int, cuenta: "Usuario", nueva: bool = False):
         super().__init__(f"Demasiados intentos. La cuenta queda bloqueada {minutos} min.")
-        self.minutos = minutos
+        self.minutos, self.cuenta = minutos, cuenta
+        self.nueva = nueva  # True si se bloqueó recién (no un intento durante el bloqueo)
 
 
 class CuentaDesactivada(Exception):
-    pass
+    def __init__(self, cuenta: "Usuario"):
+        super().__init__("Cuenta desactivada")
+        self.cuenta = cuenta
 
 
 def ahora() -> datetime:
@@ -136,6 +139,10 @@ def _validar_nombre(nombre: str) -> str:
 def _correo_libre(db: Session, correo: str | None, excepto: int | None = None):
     if correo and db.scalar(select(Usuario.id).where(Usuario.correo == correo, Usuario.id != (excepto or 0))):
         raise ErrorUsuario("Ya hay otra cuenta con ese correo")
+
+
+def buscar(db: Session, usuario: str) -> Usuario | None:
+    return db.scalar(select(Usuario).where(Usuario.usuario == (usuario or "").strip().lower()))
 
 
 def hay_usuarios(db: Session) -> bool:
@@ -259,23 +266,23 @@ def _hash_token(token: str) -> str:
 
 def autenticar(db: Session, usuario: str, clave: str) -> Usuario | None:
     """Devuelve la cuenta si la contraseña es correcta; None si no. Lleva la cuenta de los intentos."""
-    u = db.scalar(select(Usuario).where(Usuario.usuario == usuario.strip().lower()))
+    u = buscar(db, usuario)
     if u is None:
         _comparar_con_falso(clave)
         return None
     momento = ahora()
     if u.bloqueado_hasta and u.bloqueado_hasta > momento:
-        raise CuentaBloqueada(int((u.bloqueado_hasta - momento).total_seconds() // 60) + 1)
+        raise CuentaBloqueada(int((u.bloqueado_hasta - momento).total_seconds() // 60) + 1, u)
     if not clave_correcta(clave, u.clave_hash):
         u.intentos_fallidos = (u.intentos_fallidos or 0) + 1
         if u.intentos_fallidos >= MAX_INTENTOS:
             u.intentos_fallidos, u.bloqueado_hasta = 0, momento + BLOQUEO
             db.commit()
-            raise CuentaBloqueada(int(BLOQUEO.total_seconds() // 60))
+            raise CuentaBloqueada(int(BLOQUEO.total_seconds() // 60), u, nueva=True)
         db.commit()
         return None
     if not u.activo:
-        raise CuentaDesactivada
+        raise CuentaDesactivada(u)
     u.intentos_fallidos, u.bloqueado_hasta = 0, None
     db.commit()
     return u

@@ -17,10 +17,11 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from ksecure.almacenamiento import usuarios
+from ksecure.almacenamiento import bitacora, usuarios
 from ksecure.almacenamiento.db import crear_sesiones
 from ksecure.correo import Correo
-from ksecure.web.api import auditor, escanear, reglas, resultados
+from ksecure.web.api import auditor, escanear, reglas, resultados, seguridad
+from ksecure.web.api import bitacora as api_bitacora
 from ksecure.web.api import sesion as api_sesion
 from ksecure.web.api import usuarios as api_usuarios
 from ksecure.web.sesion import proteger
@@ -35,7 +36,9 @@ def create_app(db_url: str | None = None, acceso: str | None = None, correo: Cor
     acceso = acceso if acceso is not None else os.environ.get("KSECURE_ACCESO", "")
     if acceso:
         with app.state.sesiones() as db:
-            usuarios.crear_admin_inicial(db, acceso)
+            if admin := usuarios.crear_admin_inicial(db, acceso):
+                bitacora.registrar(db, "configuracion_inicial",
+                                   f"Administrador inicial @{admin.usuario} creado desde KSECURE_ACCESO", usuario=admin)
     proteger(app)
 
     @app.get("/api/health", tags=["sistema"])
@@ -48,6 +51,8 @@ def create_app(db_url: str | None = None, acceso: str | None = None, correo: Cor
     app.include_router(resultados.router)
     app.include_router(auditor.router)
     app.include_router(reglas.router)
+    app.include_router(api_bitacora.router)
+    app.include_router(seguridad.router)
     # Va al final: todo lo que no sea /api/... son las páginas (index.html, archivos.html, ...).
     app.mount("/", StaticFiles(directory=STATIC, html=True), name="paginas")
     return app

@@ -21,7 +21,7 @@ import sys
 
 from sqlalchemy import select
 
-from ksecure.almacenamiento import usuarios
+from ksecure.almacenamiento import bitacora, usuarios
 from ksecure.almacenamiento.db import crear_sesiones
 from ksecure.almacenamiento.modelos import Usuario
 
@@ -58,6 +58,9 @@ def main(argv: list[str] | None = None) -> int:
             cuenta.rol, cuenta.activo = usuarios.ADMIN, True
             db.commit()
         cuenta, temporal = usuarios.restablecer(db, cuenta.id)
+        bitacora.registrar(db, "clave_restablecida",
+                           f"Contraseña temporal nueva para @{cuenta.usuario} desde la terminal (python -m ksecure.restablecer)"
+                           + (", y quedó como Admin activa" if a.admin else ""), afectado=cuenta)
 
     print(f"Cuenta: {cuenta.usuario} ({cuenta.rol}{'' if cuenta.activo else ', desactivada'})")
     print(f"Contraseña temporal: {temporal}")

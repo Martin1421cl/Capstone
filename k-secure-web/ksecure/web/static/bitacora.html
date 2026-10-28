@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bitácora · K-Secure</title>
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/css/ksecure.css">
+</head>
+<body data-pagina="bitacora">
+  <header id="site-header" class="site-header"></header>
+
+  <main class="container">
+    <div class="section-title entrar">
+      <div>
+        <h1 style="margin:0">Bitácora</h1>
+        <p class="muted" style="margin:6px 0 0">Quién hizo qué y cuándo. Solo se agregan registros: nadie puede editarlos ni borrarlos desde K-Secure.</p>
+      </div>
+      <a class="btn" id="descargar" href="/api/bitacora/csv" download></a>
+    </div>
+
+    <p class="muted entrar" style="margin:22px 0 10px;font-size:.88rem" id="periodo-kpis">Últimos 7 días</p>
+    <div class="grid grid-4" id="kpis"></div>
+
+    <section class="section">
+      <div class="filtros">
+        <select id="filtro-categoria" aria-label="Filtrar por tipo de acción"><option value="">Todas las acciones</option></select>
+        <select id="filtro-persona" aria-label="Filtrar por persona"><option value="">Todas las personas</option></select>
+        <select id="filtro-dias" aria-label="Período">
+          <option value="1">Últimas 24 horas</option>
+          <option value="7">Últimos 7 días</option>
+          <option value="30" selected>Últimos 30 días</option>
+          <option value="">Todo</option>
+        </select>
+        <input id="filtro-buscar" type="search" placeholder="Buscar detalle, usuario o IP" aria-label="Buscar">
+      </div>
+      <div class="tabla-wrap">
+        <table class="tabla-bitacora">
+          <thead><tr><th>Cuándo</th><th>Quién</th><th>Qué pasó</th><th>Detalle</th><th>IP</th></tr></thead>
+          <tbody id="eventos"></tbody>
+        </table>
+      </div>
+      <div class="paginacion">
+        <span class="muted" id="info-pagina"></span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm" id="anterior" type="button">← Anterior</button>
+          <button class="btn btn-sm" id="siguiente" type="button">Siguiente →</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+  <script type="module" src="/js/bitacora.js"></script>
+</body>
+</html>

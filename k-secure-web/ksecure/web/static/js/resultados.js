@@ -1,11 +1,18 @@
 import { RIESGOS, api, nombreTipo } from "./api.js";
-import { aviso, confirmar, contarHasta, el, formatoFecha, icono, plural, puede, revelarHallazgo } from "./ui.js";
+import { aviso, campoTexto, confirmar, contarHasta, dialogo, el, formatoFecha, icono, plural, puede, revelarHallazgo } from "./ui.js";
 
 const $ = (id) => document.getElementById(id);
 const id = new URLSearchParams(location.search).get("id");
 const SEGUNDOS_VISIBLE = 20;
 const POR_PAGINA = 15;
-const filtros = { riesgo: "", tipo: "", buscar: "", pagina: 1, orden: "riesgo", invertir: false };
+const filtros = { riesgo: "", tipo: "", buscar: "", revision: "", pagina: 1, orden: "riesgo", invertir: false };
+// Revisión de hallazgos (RF-16)
+const REVISION = { pendiente: "Pendiente", confirmado: "Confirmado", falso_positivo: "Falso positivo" };
+const REVISION_PLURAL = { pendiente: ["pendiente", "pendientes"], confirmado: ["confirmado", "confirmados"],
+  falso_positivo: ["falso positivo", "falsos positivos"] };
+const FILTROS_REVISION = [["pendiente", "Pendientes"], ["confirmado", "Confirmados"], ["falso_positivo", "Falsos positivos"],
+  ["sin_falsos", "Sin falsos positivos"]];
+let totalFiltrado = 0;  // cuántos hallazgos cumplen los filtros: lo usa "Revisar los N del filtro"
 // Vista de hallazgos: "tipos" (una columna por tipo de dato) o "detalle" (una fila por hallazgo).
 // Se recuerda en este navegador; si el navegador no deja guardar, parte en "tipos".
 const CLAVE_VISTA = "ksecure.vistaHallazgos";
@@ -24,7 +31,8 @@ try {
   detalle = await api(`/escaneos/${id}`);
 } catch {
   $("titulo").textContent = "Escaneo no encontrado";
-  document.querySelectorAll(".section, #kpis").forEach((s) => s.remove());
+  document.querySelectorAll(".section, #kpis, #revision").forEach((s) => s.remove());
+  document.getElementById("exportar").remove();
   throw new Error("escaneo no encontrado");
 }
 
@@ -121,6 +129,46 @@ if (detalle.columnas.length) {
   }));
 }
 
+// --- Avance de la revisión (RF-16) ----------------------------------------------------------
+function pintarRevision(r) {
+  const total = r.pendiente + r.confirmado + r.falso_positivo;
+  const revisados = r.confirmado + r.falso_positivo;
+  const pct = (n) => (total ? (100 * n) / total : 0);
+  const filtrarPor = (estado) => () => {
+    filtros.revision = filtros.revision === estado ? "" : estado;
+    $("filtro-revision").value = filtros.revision;
+    filtros.pagina = 1;
+    recargar();
+    $("sec-hallazgos").scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  const chip = (estado, n) => el("button", {
+    type: "button", class: `chip-revision rev-${estado}`, onclick: filtrarPor(estado),
+    "aria-pressed": String(filtros.revision === estado), title: `Ver solo los ${REVISION_PLURAL[estado][1]}`,
+  }, el("strong", {}, n.toLocaleString("es-CL")), ` ${REVISION_PLURAL[estado][n === 1 ? 0 : 1]}`);
+  $("revision").replaceChildren(
+    el("div", { class: "revision-titulo" },
+      el("h2", {}, "Revisión"),
+      el("span", { class: "muted" }, total
+        ? `${revisados.toLocaleString("es-CL")} de ${total.toLocaleString("es-CL")} revisados (${Math.round(pct(revisados))} %)`
+        : "Sin hallazgos que revisar")),
+    el("div", { class: "barra-revision", role: "img",
+      "aria-label": `${r.confirmado} confirmados, ${r.falso_positivo} falsos positivos, ${r.pendiente} pendientes` },
+      el("span", { class: "rev-confirmado", style: `width:${pct(r.confirmado)}%` }),
+      el("span", { class: "rev-falso_positivo", style: `width:${pct(r.falso_positivo)}%` })),
+    el("div", { class: "chips-revision" }, chip("confirmado", r.confirmado), chip("falso_positivo", r.falso_positivo),
+      chip("pendiente", r.pendiente)),
+    puede("Auditor") && total
+      ? el("p", { class: "muted ayuda-revision" }, "Marca cada hallazgo en la vista Detalle, o todos los del filtro con «Revisar…». Queda en la bitácora.")
+      : null);
+}
+let resumenRevision = detalle.revision;
+pintarRevision(resumenRevision);
+
+async function actualizarResumenRevision() {
+  resumenRevision = (await api(`/escaneos/${id}`)).revision;
+  pintarRevision(resumenRevision);
+}
+
 // --- Errores ----------------------------------------------------------------------------
 if (detalle.errores.length) {
   $("sec-errores").hidden = false;
@@ -130,6 +178,67 @@ if (detalle.errores.length) {
 // --- Tabla de hallazgos -------------------------------------------------------------------
 RIESGOS.forEach((r) => $("filtro-riesgo").append(el("option", { value: r.id }, r.id)));
 Object.keys(detalle.por_tipo).forEach((t) => $("filtro-tipo").append(el("option", { value: t }, nombreTipo(t))));
+FILTROS_REVISION.forEach(([valor, texto]) => $("filtro-revision").append(el("option", { value: valor }, texto)));
+
+// Marcar un hallazgo. El falso positivo pide el motivo (opcional), que queda en la bitácora.
+async function marcar(h, estado) {
+  let nota = null;
+  if (estado === "falso_positivo") {
+    const datos = await dialogo("¿Falso positivo?", `${nombreTipo(h.tipo)} ${h.valor} · ${h.columna ? `${h.fuente}.${h.columna}` : h.fuente}`,
+      [campoTexto("nota", "Motivo (opcional)", { required: false, ayuda: "Ej.: es un número de pedido, son datos de prueba." })],
+      "Marcar falso positivo", async (form) => ({ nota: new FormData(form).get("nota") }), { iconoNombre: "x" });
+    if (!datos) return;
+    nota = datos.nota;
+  }
+  try {
+    await api(`/escaneos/${id}/hallazgos/${h.id}/revision`, { method: "PUT", json: { estado, nota } });
+    aviso(estado === "pendiente" ? "Vuelve a estar pendiente" : `Marcado como ${REVISION[estado].toLowerCase()}`);
+    await Promise.all([recargar(), actualizarResumenRevision()]);
+  } catch (e) {
+    aviso(e.message, "error");
+  }
+}
+
+function celdaRevision(h) {
+  const boton = (ic, texto, estado) => el("button", {
+    type: "button", class: "btn btn-icon btn-sm", "aria-label": texto, title: texto, onclick: () => marcar(h, estado) }, icono(ic));
+  const quien = h.revision === "pendiente" ? null
+    : el("div", { class: "muted rev-info", title: h.nota || "" }, `@${h.revisado_por}`, h.nota ? ` · «${h.nota}»` : "");
+  return el("div", { class: "celda-revision" },
+    el("div", {}, el("span", { class: `badge rev-${h.revision}` }, REVISION[h.revision]), quien),
+    puede("Auditor") ? el("div", { class: "rev-acciones" },
+      h.revision !== "confirmado" ? boton("check", "Confirmar: sí es un dato sensible", "confirmado") : null,
+      h.revision !== "falso_positivo" ? boton("x", "Falso positivo", "falso_positivo") : null,
+      h.revision !== "pendiente" ? boton("deshacer", "Volver a pendiente", "pendiente") : null) : null);
+}
+
+// "Revisar los N del filtro": marca de una vez todo lo que se ve con los filtros actuales (ej. una columna).
+function actualizarRevisarVarios() {
+  const b = $("revisar-varios");
+  b.hidden = !puede("Auditor") || totalFiltrado === 0;
+  b.replaceChildren(icono("check"), `Revisar ${totalFiltrado === 1 ? "este" : `estos ${totalFiltrado.toLocaleString("es-CL")}`}…`);
+}
+
+$("revisar-varios").addEventListener("click", async () => {
+  const opcion = (valor, titulo, texto, marcada = false) => el("label", { class: `opcion` },
+    el("input", { type: "radio", name: "estado", value: valor, checked: marcada, required: true }),
+    el("strong", {}, titulo), el("span", {}, texto));
+  const hecho = await dialogo(`Revisar ${plural(totalFiltrado, "hallazgo")}`,
+    "Se marcan todos los que cumplen los filtros de la tabla, no solo los de esta página.",
+    [el("div", { class: "campo" }, el("label", {}, "Marcar como"), el("div", { class: "opciones" },
+      opcion("confirmado", "Confirmado", "Sí son datos sensibles.", true),
+      opcion("falso_positivo", "Falso positivo", "No son datos sensibles."),
+      opcion("pendiente", "Pendiente", "Deshace la revisión."))),
+    campoTexto("nota", "Motivo (opcional)", { required: false })],
+    "Marcar", async (form) => {
+      const { estado, nota } = Object.fromEntries(new FormData(form));
+      const { riesgo, tipo, buscar, revision } = filtros;
+      return api(`/escaneos/${id}/revision`, { method: "POST", json: { estado, nota, riesgo, tipo, buscar, revision } });
+    }, { iconoNombre: "check", clase: "ancho-medio" });
+  if (!hecho) return;
+  aviso(`${plural(hecho.marcados, "hallazgo")} ${hecho.marcados === 1 ? "marcado" : "marcados"}`);
+  await Promise.all([recargar(), actualizarResumenRevision()]);
+});
 
 // Valor enmascarado con los asteriscos (y los separadores que los siguen) en gris tenue:
 // así destaca la parte del dato que sí se ve. "****-****-****-7484" → solo "7484" en blanco.
@@ -217,9 +326,10 @@ function celdaTipo(h, riesgoColumna) {
   const texto = el("span", { class: "valor-texto" });
   const boton = botonOjo();
   conRevelar(h, texto, boton, texto);
+  const revision = h.revision === "pendiente" ? "" : `\nRevisión: ${REVISION[h.revision]} (@${h.revisado_por})${h.nota ? ` · ${h.nota}` : ""}`;
   return el("div", {
-    class: "celda-tipo",
-    title: `${h.valor}\n${completo}\n${h.riesgo} · confianza ${h.nivel_confianza} ${h.confianza}%`,
+    class: `celda-tipo rev-${h.revision}`,
+    title: `${h.valor}\n${completo}\n${h.riesgo} · confianza ${h.nivel_confianza} ${h.confianza}%${revision}`,
   },
     el("div", { class: "info" },
       texto,
@@ -251,9 +361,11 @@ function botonFlecha(paso) {
 }
 
 async function cargarTipos() {
-  const { riesgo, tipo, buscar, pagina } = filtros;
-  const q = new URLSearchParams({ riesgo, tipo, buscar, pagina, por_pagina: POR_PAGINA });
+  const { riesgo, tipo, buscar, revision, pagina } = filtros;
+  const q = new URLSearchParams({ riesgo, tipo, buscar, revision, pagina, por_pagina: POR_PAGINA });
   datosTipos = await api(`/escaneos/${id}/por-tipo?${q}`);
+  totalFiltrado = datosTipos.total;
+  actualizarRevisarVarios();
   // Si cambió qué tipos hay (otro filtro), se vuelve al primero; al cambiar de página se mantiene.
   const tipos = datosTipos.columnas.map((c) => c.tipo).join();
   if (tipos !== tiposAnteriores) primeraColumna = 0;
@@ -317,16 +429,19 @@ addEventListener("resize", () => {
 async function cargarDetalle() {
   const q = new URLSearchParams({ ...filtros, por_pagina: POR_PAGINA });
   const datos = await api(`/escaneos/${id}/hallazgos?${q}`);
+  totalFiltrado = datos.total;
+  actualizarRevisarVarios();
   $("hallazgos").replaceChildren(...(datos.items.length
-    ? datos.items.map((h, i) => el("tr", { style: `animation-delay:${Math.min(i, 15) * 25}ms` },
+    ? datos.items.map((h, i) => el("tr", { class: `rev-${h.revision}`, style: `animation-delay:${Math.min(i, 15) * 25}ms` },
       el("td", {}, el("div", {}, h.columna ? `${h.fuente}.${h.columna}` : h.fuente),
         el("div", { class: "muted", style: "font-size:.8rem" }, h.posicion)),
       el("td", {}, nombreTipo(h.tipo)),
       el("td", {}, celdaValor(h)),
       el("td", {}, el("span", { class: `badge risk-${h.riesgo}` }, h.riesgo)),
       el("td", {}, `${h.nivel_confianza} · ${h.confianza}%`),
-      el("td", { class: "muted" }, h.contexto || "—")))
-    : [el("tr", {}, el("td", { colspan: 6, class: "vacio" }, "Sin hallazgos con estos filtros"))]));
+      el("td", { class: "muted" }, h.contexto || "—"),
+      el("td", {}, celdaRevision(h))))
+    : [el("tr", {}, el("td", { colspan: 7, class: "vacio" }, "Sin hallazgos con estos filtros"))]));
 
   const paginas = Math.max(1, Math.ceil(datos.total / datos.por_pagina));
   paginar(datos.pagina, paginas, `${datos.total.toLocaleString("es-CL")} hallazgos`);
@@ -344,9 +459,40 @@ function marcarVista() {
   $("vista-detalle").hidden = vista !== "detalle";
 }
 
+// --- Exportar (CSV, JSON, PDF) con los mismos filtros de la pantalla, siempre enmascarado ------------
+const FORMATOS = [
+  ["csv", "CSV", "Para abrir en Excel"],
+  ["json", "JSON", "Para otros sistemas (por ejemplo un DLP)"],
+  ["pdf", "PDF", "Reporte para compartir"],
+];
+const enlacesExportar = FORMATOS.map(([formato, nombre, texto]) =>
+  el("a", { role: "menuitem", download: "", "data-formato": formato },
+    icono("bajar"), el("span", {}, el("strong", {}, nombre), el("small", { class: "muted" }, texto))));
+const notaExportar = el("p", { class: "nota" });
+$("exportar-boton").prepend(icono("bajar"));
+$("exportar-menu").append(notaExportar, ...enlacesExportar);
+document.addEventListener("click", (ev) => { if (!$("exportar").contains(ev.target)) $("exportar").open = false; });
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") $("exportar").open = false; });
+for (const a of enlacesExportar) a.addEventListener("click", () => { $("exportar").open = false; });
+
+function actualizarExportar() {
+  const { riesgo, tipo, buscar, revision } = filtros;
+  const textoRevision = Object.fromEntries(FILTROS_REVISION)[revision]?.toLowerCase();
+  const activos = [riesgo && `riesgo ${riesgo}`, tipo && nombreTipo(tipo), buscar && `«${buscar}»`, textoRevision].filter(Boolean);
+  notaExportar.textContent = activos.length
+    ? `Con los filtros actuales: ${activos.join(" · ")}. Siempre enmascarado.`
+    : `Los ${plural(detalle.total, "hallazgo")}, siempre enmascarados.`;
+  for (const a of enlacesExportar) {
+    const q = new URLSearchParams({ formato: a.dataset.formato, riesgo, tipo, buscar, revision, desfase: new Date().getTimezoneOffset() });
+    a.href = `/api/escaneos/${id}/exportar?${q}`;
+  }
+}
+
 async function recargar() {
   marcarVista();
   marcarOrden();
+  actualizarExportar();
+  pintarRevision(resumenRevision);  // marca el estado elegido en el recuadro de revisión
   await (vista === "tipos" ? cargarTipos() : cargarDetalle());
 }
 
@@ -362,6 +508,7 @@ for (const b of document.querySelectorAll(".vistas button")) {
 
 $("filtro-riesgo").addEventListener("change", (e) => { filtros.riesgo = e.target.value; filtros.pagina = 1; marcarKpi(); recargar(); });
 $("filtro-tipo").addEventListener("change", (e) => { filtros.tipo = e.target.value; filtros.pagina = 1; recargar(); });
+$("filtro-revision").addEventListener("change", (e) => { filtros.revision = e.target.value; filtros.pagina = 1; recargar(); });
 let espera;
 $("filtro-buscar").addEventListener("input", (e) => {
   clearTimeout(espera);

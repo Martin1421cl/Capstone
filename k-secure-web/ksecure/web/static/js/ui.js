@@ -48,6 +48,8 @@ const ICONOS = {
   copiar: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
   encender: '<path d="M12 3v9"/><path d="M6.3 7.3a8 8 0 1 0 11.4 0"/>',
   correo: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+  deshacer: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>',
+  bajar: '<path d="M12 4v12M7 11l5 5 5-5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
 };
 
 export function icono(nombre) {
@@ -65,7 +67,9 @@ const PAGINAS = [
   ["base-datos", "/base-datos.html", "Base de datos", "Auditor"],
   ["historial", "/historial.html", "Historial", "Visor"],
   ["reglas", "/reglas.html", "Reglas", "Visor"],
+  ["seguridad", "/seguridad.html", "Seguridad", "Visor"],
   ["usuarios", "/usuarios.html", "Usuarios", "Admin"],
+  ["bitacora", "/bitacora.html", "Bitácora", "Admin"],
 ];
 
 function montarLayout() {
@@ -221,7 +225,7 @@ export async function asegurarClaveAuditor() {
 export function revelarHallazgo(id) {
   return dialogo(
     "Ver dato original",
-    "Ingresa la clave de auditor. El dato se mostrará por 20 segundos.",
+    "Ingresa la clave de auditor. El dato se mostrará por 20 segundos y quedará anotado en la bitácora con tu nombre.",
     [campoClave("clave", "Clave de auditor", "current-password")],
     "Ver dato",
     async (form) => (await api(`/hallazgos/${id}/revelar`, {
