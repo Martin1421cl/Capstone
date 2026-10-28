@@ -9,6 +9,17 @@ export async function api(ruta, { method = "GET", json, form } = {}) {
     opciones.body = form;
   }
   const res = await fetch(`/api${ruta}`, opciones);
+  // Sin sesión (o vencida): al login, que después vuelve a esta misma página.
+  if (res.status === 401 && location.pathname !== "/login.html") {
+    const volver = encodeURIComponent(location.pathname + location.search);
+    location.href = `/login.html?motivo=sesion&volver=${volver}`;
+    return new Promise(() => {});  // la página se va: lo que esperaba esta respuesta no sigue
+  }
+  // Con una contraseña temporal primero hay que cambiarla.
+  if (res.status === 428 && location.pathname !== "/login.html") {
+    location.href = "/login.html";
+    return new Promise(() => {});
+  }
   if (res.status === 204) return null;
   const datos = await res.json().catch(() => ({}));
   if (!res.ok) {

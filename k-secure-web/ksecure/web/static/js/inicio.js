@@ -1,13 +1,23 @@
 import { api } from "./api.js";
 import { tarjetaEscaneo } from "./tarjetas.js";
-import { el, icono } from "./ui.js";
+import { el, icono, puede } from "./ui.js";
 
-const ACCIONES = [
+const ACCIONES = puede("Auditor") ? [
   { href: "/archivos.html", icono: "archivo", titulo: "Escanear archivos",
     texto: "Arrastra documentos Word, Excel, PowerPoint, PDF, CSV o bases SQLite (.db). Revisamos también encabezados, notas y metadata." },
   { href: "/base-datos.html", icono: "bd", titulo: "Conectar una base de datos",
     texto: "PostgreSQL, MySQL, SQL Server u Oracle en modo solo lectura. Te decimos qué columnas guardan datos sensibles." },
+] : [  // el Visor no escanea: revisa lo que ya escaneó el equipo
+  { href: "/historial.html", icono: "historial", titulo: "Ver los escaneos",
+    texto: "Revisa los escaneos del equipo y qué datos sensibles encontraron, siempre enmascarados." },
+  { href: "/reglas.html", icono: "reglas", titulo: "Ver las reglas",
+    texto: "Qué tipos de datos detecta K-Secure y con qué nivel de riesgo los clasifica." },
 ];
+
+if (!puede("Auditor")) {
+  document.getElementById("hero-acciones").replaceChildren(
+    el("a", { class: "btn btn-primary", href: "/historial.html" }, "Ver los escaneos"));
+}
 
 const PASOS = [
   { icono: "lupa", titulo: "Detecta", texto: "Cada texto pasa por 7 validadores chilenos: Módulo 11 para el RUT, Luhn para tarjetas y el contexto alrededor del dato." },

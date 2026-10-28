@@ -86,3 +86,46 @@ class AjusteValidador(Base):
     activo: Mapped[bool] = mapped_column(Boolean, default=True)
     palabras_positivas: Mapped[list] = mapped_column(type_=JSON, default=list)
     palabras_negativas: Mapped[list] = mapped_column(type_=JSON, default=list)
+
+
+class Usuario(Base):
+    """Cuenta para entrar a K-Secure. No hay registro público: las crea un administrador.
+
+    La contraseña se guarda solo como hash bcrypt (ver usuarios.py).
+    """
+
+    __tablename__ = "usuarios"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario: Mapped[str] = mapped_column(String(30), unique=True)          # en minúsculas, para ingresar
+    nombre: Mapped[str] = mapped_column(String(80))
+    correo: Mapped[str | None] = mapped_column(String(120), unique=True)   # para recuperar la contraseña
+    rol: Mapped[str] = mapped_column(String(10))                           # Admin, Auditor o Visor
+    clave_hash: Mapped[str] = mapped_column(String(100))
+    activo: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Con una contraseña temporal (cuenta nueva o restablecida) solo puede cambiarla.
+    debe_cambiar_clave: Mapped[bool] = mapped_column(Boolean, default=False)
+    intentos_fallidos: Mapped[int] = mapped_column(Integer, default=0)
+    bloqueado_hasta: Mapped[datetime | None] = mapped_column()
+    # Bloqueo propio de la clave de auditor al revelar datos (5 fallos = 1 minuto).
+    fallos_auditor: Mapped[int] = mapped_column(Integer, default=0)
+    auditor_bloqueado_hasta: Mapped[datetime | None] = mapped_column()
+    creado: Mapped[datetime] = mapped_column()
+    ultimo_ingreso: Mapped[datetime | None] = mapped_column()
+
+    sesiones: Mapped[list["Sesion"]] = relationship(
+        back_populates="usuario", cascade="all, delete-orphan", passive_deletes=True)
+
+
+class Sesion(Base):
+    """Sesión abierta en un navegador. La cookie lleva un token al azar; aquí solo se guarda su hash."""
+
+    __tablename__ = "sesiones"
+
+    token_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), index=True)
+    creada: Mapped[datetime] = mapped_column()
+    ultimo_uso: Mapped[datetime] = mapped_column()
+    expira: Mapped[datetime] = mapped_column()  # tope absoluto, aunque se siga usando
+
+    usuario: Mapped[Usuario] = relationship(back_populates="sesiones")

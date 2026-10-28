@@ -1,5 +1,5 @@
 import { RIESGOS, api, nombreTipo } from "./api.js";
-import { aviso, confirmar, contarHasta, el, formatoFecha, icono, plural, revelarHallazgo } from "./ui.js";
+import { aviso, confirmar, contarHasta, el, formatoFecha, icono, plural, puede, revelarHallazgo } from "./ui.js";
 
 const $ = (id) => document.getElementById(id);
 const id = new URLSearchParams(location.search).get("id");
@@ -31,8 +31,9 @@ try {
 // --- Encabezado ------------------------------------------------------------------
 document.title = `${detalle.origen_nombre} · K-Secure`;
 $("titulo").textContent = detalle.origen_nombre;
+if (!puede("Auditor")) document.querySelector("#sec-hallazgos .section-title p").textContent = "Enmascarados: tu rol permite ver los resultados, no los originales.";
 $("meta").textContent = `${detalle.origen_tipo === "bd" ? "Base de datos" : "Archivos"} · ${formatoFecha(detalle.fecha)}`;
-$("borrar").hidden = false;
+$("borrar").hidden = !puede("Auditor");  // el Visor solo mira
 $("borrar").addEventListener("click", async () => {
   const ok = await confirmar({
     titulo: "¿Borrar este escaneo?",
@@ -144,14 +145,15 @@ function valorEnmascarado(v) {
   return partes;
 }
 
-const botonOjo = () =>
-  el("button", { class: "btn btn-icon btn-sm", type: "button", "aria-label": "Ver dato original" }, icono("ojo"));
+// El ojo solo aparece para quien puede ver originales (Auditor o Admin).
+const botonOjo = () => !puede("Auditor") ? null
+  : el("button", { class: "btn btn-icon btn-sm", type: "button", "aria-label": "Ver dato original" }, icono("ojo"));
 
 // El ojo pide la clave de auditor y muestra el original 20 segundos en "texto"; "marca" se pinta mientras tanto.
 function conRevelar(h, texto, boton, marca) {
   const enmascarar = () => texto.replaceChildren(...valorEnmascarado(h.valor));
   enmascarar();
-  boton.addEventListener("click", async () => {
+  boton?.addEventListener("click", async () => {
     try {
       const original = await revelarHallazgo(h.id);
       if (original == null) return;

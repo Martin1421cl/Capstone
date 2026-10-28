@@ -6,6 +6,7 @@ uvicorn>=0.50
 python-multipart>=0.0.20
 sqlalchemy>=2.0
 cryptography>=45.0
+bcrypt>=4.2
 # Drivers de bases de datos del cliente
 psycopg[binary]>=3.2
 pymysql>=1.1

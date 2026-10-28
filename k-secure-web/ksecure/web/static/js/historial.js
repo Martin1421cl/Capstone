@@ -1,6 +1,6 @@
 import { api } from "./api.js";
 import { tarjetaEscaneo } from "./tarjetas.js";
-import { aviso, confirmar, el, icono, plural } from "./ui.js";
+import { aviso, confirmar, el, icono, plural, puede } from "./ui.js";
 
 const lista = document.getElementById("lista");
 
@@ -17,7 +17,7 @@ function vacio() {
 async function cargar() {
   const escaneos = await api("/escaneos");
   lista.replaceChildren(...(escaneos.length
-    ? escaneos.map((e) => tarjetaEscaneo(e, {
+    ? escaneos.map((e) => tarjetaEscaneo(e, !puede("Auditor") ? {} : {
       alBorrar: async () => {
         const ok = await confirmar({
           titulo: "¿Borrar este escaneo?",

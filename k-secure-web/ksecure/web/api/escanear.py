@@ -12,14 +12,14 @@ from ksecure.almacenamiento import reglas, repositorio
 from ksecure.escaneo.archivos import escanear_archivos
 from ksecure.escaneo.bases_datos import (MOTORES, PUERTOS, ConexionError, DatosConexion, conectar,
                                          escanear_bd, listar_tablas)
-from ksecure.web.api.dependencias import exigir_boveda, get_db
+from ksecure.web.api.dependencias import AUDITOR_O_MAS, exigir_boveda, get_db
 
 MAX_ARCHIVO = 100 * 1024 * 1024  # 100 MB, igual que ferret-scan
 
 router = APIRouter(prefix="/api", tags=["escanear"])
 
 
-@router.post("/archivos")
+@router.post("/archivos", dependencies=[AUDITOR_O_MAS])
 async def escanear_subidos(archivos: list[UploadFile], db: Session = Depends(get_db)):
     """Escanea documentos (docx, pdf, xlsx, csv, txt...) y bases SQLite (.db) en un solo escaneo."""
     exigir_boveda(db)
@@ -63,12 +63,12 @@ def _conectar(c: Conexion):
         raise HTTPException(400, str(e)) from e
 
 
-@router.get("/bd/motores")
+@router.get("/bd/motores", dependencies=[AUDITOR_O_MAS])
 def motores():
     return [{"id": k, "nombre": v, "puerto": PUERTOS.get(k)} for k, v in MOTORES.items()]
 
 
-@router.post("/bd/probar")
+@router.post("/bd/probar", dependencies=[AUDITOR_O_MAS])
 def probar_conexion(conexion: Conexion):
     """Prueba la conexión y devuelve las tablas, para elegir cuáles escanear."""
     engine = _conectar(conexion)
@@ -78,7 +78,7 @@ def probar_conexion(conexion: Conexion):
         engine.dispose()
 
 
-@router.post("/bd/escanear")
+@router.post("/bd/escanear", dependencies=[AUDITOR_O_MAS])
 def escanear_base(pedido: PedidoEscaneoBD, db: Session = Depends(get_db)):
     exigir_boveda(db)
     engine = _conectar(pedido.conexion)

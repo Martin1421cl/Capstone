@@ -12,6 +12,12 @@ Arquitectura completa, decisiones de diseño y cómo se construyó: [`docs/ARQUI
 
 ## Cómo se protegen los datos
 
+- **Login con roles, sin registro público.** Las cuentas las crea un administrador con una contraseña
+  temporal, que la persona cambia al primer ingreso. Roles: **Visor** (ve resultados enmascarados),
+  **Auditor** (además escanea, borra escaneos y ve originales con la clave de auditor) y **Admin**
+  (además cuentas, reglas y la clave de auditor). Contraseñas con bcrypt; 5 intentos fallidos
+  bloquean la cuenta 5 minutos; la sesión vence tras 30 minutos sin uso o a las 12 horas.
+  Detalle en `ksecure/almacenamiento/usuarios.py` y `ksecure/web/sesion.py`.
 - Las bases del cliente se abren en **solo lectura** (K-Secure solo ejecuta `SELECT`).
 - La base interna guarda cada hallazgo **enmascarado** (`**.***.198-5`) y el original **cifrado**.
 - **Cifrado híbrido**: al crear la clave de auditor se genera un par RSA; la llave privada queda
@@ -51,12 +57,14 @@ ksecure/
 ├── almacenamiento/         # DÓNDE se guarda
 │   ├── modelos.py · db.py  #   tablas de la base interna (SQLite local o KSECURE_DB_URL)
 │   ├── boveda.py           #   cifrado de originales con la clave de auditor
+│   ├── usuarios.py         #   cuentas, roles, contraseñas (bcrypt), bloqueo y sesiones
 │   ├── repositorio.py      #   guardar, listar, resumir, columnas sensibles, revelar
 │   └── reglas.py           #   mantenedor de reglas: guarda reglas y arma los validadores activos
 └── web/                    # CÓMO se muestra
     ├── app.py              #   FastAPI: monta la API y las páginas
-    ├── api/                #   escanear.py · resultados.py · auditor.py · reglas.py
-    └── static/             #   index, archivos, base-datos, resultados, historial, reglas (+ css, js, img)
+    ├── sesion.py           #   login: exige sesión en toda la web y revisa el rol de cada endpoint
+    ├── api/                #   sesion.py · usuarios.py · escanear.py · resultados.py · auditor.py · reglas.py
+    └── static/             #   login, index, archivos, base-datos, resultados, historial, reglas, usuarios
 tests/
 ```
 
@@ -72,8 +80,9 @@ pip install -r requirements.txt
 uvicorn ksecure.web.app:app
 ```
 
-Abrir http://localhost:8000. La primera vez que escanees se pide crear la **clave de auditor**.
-La API queda documentada en http://localhost:8000/docs.
+Abrir http://localhost:8000. La primera vez se pide **crear la cuenta de administrador**; desde
+**Usuarios** se crean las demás cuentas y la **clave de auditor** (sin ella no se puede escanear).
+La API queda documentada en http://localhost:8000/docs (con sesión iniciada).
 
 ## Publicar en la nube (gratis: Render + Neon)
 
@@ -81,8 +90,11 @@ La API queda documentada en http://localhost:8000/docs.
 2. **Render** (https://render.com): *New → Blueprint* → elegir el repositorio Capstone. Render lee `render.yaml` (en la raíz)
    y pide dos variables:
    - `KSECURE_DB_URL`: la connection string de Neon.
-   - `KSECURE_ACCESO`: `usuario:contraseña` para entrar a la web (candado mientras no haya login).
-3. Abrir la URL que entrega Render y **crear de inmediato la clave de auditor**.
+   - `KSECURE_ACCESO`: `usuario:contraseña` del **primer administrador**. Se crea al arrancar solo si la
+     base no tiene cuentas (así nadie más puede tomar la configuración inicial). Al entrar pide
+     cambiar la contraseña y registrar el correo.
+3. Abrir la URL que entrega Render, ingresar con esa cuenta y **crear de inmediato la clave de auditor**
+   en **Usuarios**.
 
 El plan gratis de Render "duerme" la app tras 15 minutos sin uso: la primera visita tarda ~1 minuto.
 

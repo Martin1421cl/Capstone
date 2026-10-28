@@ -115,14 +115,15 @@ k-secure-web/ksecure/
 │   ├── modelos.py          Tablas de la base interna (SQLAlchemy)
 │   ├── db.py               Conexión, creación y actualización automática de tablas
 │   ├── boveda.py           Cifrado de originales con la clave de auditor
+│   ├── usuarios.py         Cuentas, roles, contraseñas (bcrypt), bloqueo y sesiones
 │   ├── repositorio.py      Guardar, listar, resumir, columnas sensibles, ordenar, revelar
 │   └── reglas.py           Mantenedor: valida, guarda reglas y arma los validadores activos
 │
 └── web/                  CÓMO SE MUESTRA
     ├── app.py              Crea la app FastAPI y monta API + páginas
-    ├── acceso.py           Candado usuario/contraseña para la nube (temporal, hasta tener login)
-    ├── api/                escanear.py · resultados.py · auditor.py · reglas.py · dependencias.py
-    └── static/             index, archivos, base-datos, resultados, historial, reglas (.html)
+    ├── sesion.py           Login: exige sesión en toda la web y revisa el rol en cada endpoint
+    ├── api/                sesion.py · usuarios.py · escanear.py · resultados.py · auditor.py · reglas.py
+    └── static/             login, index, archivos, base-datos, resultados, historial, reglas, usuarios (.html)
                             + css/ksecure.css + js/ (un módulo por página + api.js + ui.js)
 ```
 
@@ -273,12 +274,16 @@ enmascarados y datos cifrados que no puede abrir sin la clave del auditor.
 |---|---|
 | Solo lectura en bases del cliente | `escaneo/bases_datos.py` |
 | La contraseña de la base del cliente no se guarda | `web/api/escanear.py` |
-| 5 claves de auditor incorrectas seguidas bloquean 1 minuto | `web/api/auditor.py` |
+| Login con roles Admin / Auditor / Visor, sin registro público | `web/sesion.py`, `almacenamiento/usuarios.py` |
+| Contraseñas con bcrypt; 5 intentos fallidos bloquean la cuenta 5 minutos | `almacenamiento/usuarios.py` |
+| Sesión en cookie HttpOnly + SameSite; vence a los 30 min sin uso o a las 12 h; la base guarda solo el hash del token | `web/sesion.py`, `almacenamiento/usuarios.py` |
+| Otra página no puede enviar acciones con la cookie del usuario (revisión del encabezado Origin) | `web/sesion.py` |
+| 5 claves de auditor incorrectas seguidas bloquean 1 minuto, por cuenta | `web/api/auditor.py` |
 | El dato revelado se vuelve a ocultar a los 20 s | `static/js/resultados.js` |
 | El nombre del archivo subido nunca decide una ruta en disco | `web/api/escanear.py` |
 | Textos de archivos del usuario se muestran con `textContent`, nunca como HTML (contra XSS) | `static/js/ui.js` |
 | Límites contra zip bombs y archivos enormes | `preprocessors/` |
-| Candado usuario/contraseña en la nube (`KSECURE_ACCESO`) | `web/acceso.py` |
+| Primer administrador desde `KSECURE_ACCESO` (solo si la base no tiene cuentas) | `web/app.py` |
 | Secretos fuera del repositorio (variables de entorno en Render) | `render.yaml` |
 
 ---
@@ -371,7 +376,7 @@ GitHub (Capstone, main) ──push──► Render (servidor Python, Ohio) ◄�
   `pip install -r requirements.txt`, arranque con `uvicorn ksecure.web.app:app --host 0.0.0.0 --port $PORT`.
 - Variables de entorno en Render (**no están en el código**):
   - `KSECURE_DB_URL`: connection string de Neon.
-  - `KSECURE_ACCESO`: `usuario:contraseña` del candado de la web.
+  - `KSECURE_ACCESO`: `usuario:contraseña` del primer administrador (se usa solo si la base no tiene cuentas).
 - **Cada push a `main` se publica solo** (3–5 minutos, sin cortar el servicio). Esto responde el
   argumento de los 1000 computadores: se actualiza en un solo lugar.
 - Plan gratis: Render duerme la app tras 15 minutos sin uso; la primera visita tarda ~1 minuto.
@@ -381,7 +386,7 @@ GitHub (Capstone, main) ──push──► Render (servidor Python, Ohio) ◄�
 
 ## 13. Pruebas
 
-**137 tests automáticos** (`pytest`, en `k-secure-web/tests/`):
+**159 tests automáticos** (`pytest`, en `k-secure-web/tests/`):
 
 | Archivo | Tests | Qué cubre |
 |---|---|---|
@@ -389,7 +394,9 @@ GitHub (Capstone, main) ──push──► Render (servidor Python, Ohio) ◄�
 | `test_validadores.py` | 61 | Teléfono, tarjeta, correo, cuenta, patente, secretos, enmascarado, contexto de columna |
 | `test_preprocesadores.py` | 16 | Codificaciones, docx, xlsx, pptx, odt, pdf, planillas como tablas |
 | `test_reglas.py` | 23 | Reglas personalizadas, patrón desde ejemplos, validadores incluidos, actualización de tablas |
-| `test_web.py` | 15 | API completa: bóveda, revelar, bloqueo, SQLite, historial, orden, candado, URL de Neon |
+| `test_web.py` | 16 | API completa: bóveda, revelar, bloqueo, SQLite, historial, orden, vista por tipo, primer administrador, URL de Neon |
+| `test_sesion.py` | 18 | Login: ninguna ruta abierta, roles, bloqueo, contraseña temporal, vencimiento, cookie, último administrador |
+| `test_cliente_simulado.py` | 3 | Cliente simulado: datos válidos y lo que K-Secure debe encontrar |
 
 Además se verificó con archivos reales del equipo (un `.xls` con 347 RUT, PDFs, bases SQLite de
 ejemplo) y recorriendo la interfaz en un navegador automatizado.
@@ -408,6 +415,8 @@ ejemplo) y recorriendo la interfaz en un navegador automatizado.
 | 6. Mantenedor de reglas | Reglas sin programar, asistente con patrón desde ejemplos |
 | 7. Ordenar resultados | Encabezados ordenables por riesgo, tipo, confianza y ubicación |
 | 8. Nube | Render + Neon, candado de acceso, publicación desde el repositorio del equipo |
+| 9. Vista por tipo y cliente simulado | Hallazgos en columnas por tipo de dato; base ficticia de una empresa en Neon para las pruebas |
+| 10. Login con roles | Cuentas Admin / Auditor / Visor sin registro público, contraseñas bcrypt, sesiones que vencen |
 
 ---
 
@@ -425,7 +434,7 @@ ejemplo) y recorriendo la interfaz en un navegador automatizado.
 ## 16. Limitaciones conocidas y próximos pasos
 
 **Limitaciones actuales**
-- No hay login con roles; en la nube hay un candado único compartido.
+- Falta recuperar la contraseña por correo (hoy la restablece un administrador) y la bitácora de acciones.
 - Desde la nube solo se llega a bases que estén en internet (no a una base dentro de la red de una empresa).
 - No detecta: RUT sin guion o sin dígito verificador, texto dentro de imágenes o PDF escaneados (sin OCR),
   comentarios y notas al pie de Word, nombres y direcciones.

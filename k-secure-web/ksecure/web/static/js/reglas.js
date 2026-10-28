@@ -1,7 +1,9 @@
 import { RIESGOS, api, nombreTipo } from "./api.js";
-import { aviso, confirmar, el, icono } from "./ui.js";
+import { aviso, confirmar, el, icono, puede } from "./ui.js";
 
 const $ = (id) => document.getElementById(id);
+// Solo un Admin cambia reglas; los demás roles las ven sin poder editarlas (el servidor también lo exige).
+const soloLectura = !puede("Admin");
 
 // Opciones en palabras; por dentro son los parámetros del validador.
 const VALIDACIONES = [
@@ -83,7 +85,7 @@ function grupoOpciones(nombre, opciones, actual, alCambiar = () => {}) {
 const elegido = (form, nombre) => form.querySelector(`input[name="${nombre}"]:checked`)?.value;
 
 function interruptor(marcado, etiqueta, alCambiar) {
-  const input = el("input", { type: "checkbox", checked: marcado, "aria-label": etiqueta });
+  const input = el("input", { type: "checkbox", checked: marcado, "aria-label": etiqueta, disabled: soloLectura });
   input.addEventListener("change", () => alCambiar(input.checked));
   return el("label", { class: "switch" }, input, el("span", { class: "pista" }), el("span", { class: "muted" }, marcado ? "Activa" : "Apagada"));
 }
@@ -311,7 +313,7 @@ function tarjetaRegla(r) {
       el("span", { class: "badge" }, r.riesgo),
       el("span", { class: "palabras" }, certeza(r.confianza).titulo, r.validacion !== "ninguna" ? ` · ${validacion.titulo.toLowerCase()}` : "")),
     r.palabras_positivas.length > 0 && el("div", { class: "palabras" }, "Palabras: ", r.palabras_positivas.join(", ")),
-    el("div", { class: "acciones" },
+    !soloLectura && el("div", { class: "acciones" },
       el("button", { class: "btn btn-sm", type: "button", onclick: () => abrirAsistente(r) }, icono("lapiz"), "Editar"),
       el("button", { class: "btn btn-sm btn-danger", type: "button", onclick: async () => {
         const ok = await confirmar({
@@ -343,7 +345,7 @@ function tarjetaIncluido(v) {
       interruptor(v.activo, `Activar ${nombreTipo(v.nombre)}`, (activo) => guardar({ activo }))),
     el("p", { class: "muted", style: "margin:0;font-size:.92rem" }, v.descripcion),
     v.palabras_positivas.length > 0 && el("div", { class: "palabras" }, "Tus palabras: ", v.palabras_positivas.join(", ")),
-    el("div", { class: "acciones" },
+    !soloLectura && el("div", { class: "acciones" },
       el("button", { class: "btn btn-sm", type: "button", onclick: () => editarPalabras(v, guardar) }, icono("lapiz"), "Palabras de contexto")));
 }
 
@@ -380,11 +382,21 @@ async function cargar() {
     ? personalizadas.map(tarjetaRegla)
     : [el("div", { class: "card vacio", style: "grid-column:1/-1" },
       el("div", { class: "icon-badge" }, icono("reglas")),
-      el("h3", {}, "¿Necesitas detectar otro tipo de dato?"),
-      el("p", {}, "Pasaportes, fichas clínicas, N° de socio… Solo escribe un par de ejemplos y K-Secure arma la regla."),
-      el("button", { class: "btn btn-primary", type: "button", onclick: () => abrirAsistente() }, icono("mas"), "Crear mi primera regla"))]));
+      el("h3", {}, soloLectura ? "Todavía no hay reglas personalizadas" : "¿Necesitas detectar otro tipo de dato?"),
+      el("p", {}, soloLectura
+        ? "Un administrador puede agregar pasaportes, fichas clínicas, N° de socio y otros datos propios."
+        : "Pasaportes, fichas clínicas, N° de socio… Solo escribe un par de ejemplos y K-Secure arma la regla."),
+      !soloLectura && el("button", { class: "btn btn-primary", type: "button", onclick: () => abrirAsistente() }, icono("mas"), "Crear mi primera regla"))]));
 }
 
 $("nueva").append(icono("mas"), "Nueva regla");
 $("nueva").addEventListener("click", () => abrirAsistente());
+if (soloLectura) {
+  $("nueva").hidden = true;
+  document.querySelector("main > p.muted").textContent = "Los tipos de datos que detecta K-Secure y cómo clasifica cada uno.";
+  document.querySelector("main > p.muted").after(el("div", { class: "forma entrar" }, icono("info"),
+    el("span", {}, "Puedes ver las reglas. Solo un administrador puede crearlas o cambiarlas.")));
+  document.querySelector("#incluidos").closest("section").querySelector(".section-title p").textContent =
+    "Traen algoritmos propios (Módulo 11, Luhn…).";
+}
 cargar();

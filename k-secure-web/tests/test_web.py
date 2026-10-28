@@ -3,16 +3,15 @@ import sqlite3
 import pytest
 from fastapi.testclient import TestClient
 
-from ksecure.web.api import auditor
 from ksecure.web.app import create_app
-
-CLAVE = "clave-auditor-123"
+from tests.conftest import CLAVE_AUDITOR as CLAVE
+from tests.conftest import app_con_admin
 
 
 @pytest.fixture
 def client():
-    auditor.bloqueo.__init__()  # cada test parte sin intentos fallidos
-    return TestClient(create_app("sqlite://"))
+    """K-Secure con el administrador conectado (todas las pruebas de la web parten con sesión)."""
+    return app_con_admin()
 
 
 @pytest.fixture
@@ -26,7 +25,7 @@ def subir(client, *archivos):
 
 
 def test_paginas_y_health(client):
-    assert client.get("/api/health").json() == {"status": "ok"}
+    assert TestClient(client.app).get("/api/health").json() == {"status": "ok"}  # libre, sin sesión
     assert "K-Secure" in client.get("/").text
 
 
@@ -163,13 +162,19 @@ def test_hallazgos_por_tipo_una_columna_por_dato(con_clave):
 from ksecure.almacenamiento.db import normalizar_url
 
 
-def test_candado_de_acceso():
+def test_admin_inicial_desde_ksecure_acceso():
+    """En la nube, KSECURE_ACCESO crea el primer administrador; al entrar debe cambiar la clave y dar su correo."""
     c = TestClient(create_app("sqlite://", acceso="equipo:clave-secreta"))
-    assert c.get("/").status_code == 401
-    assert c.get("/api/escaneos").headers["www-authenticate"].startswith("Basic")
-    assert c.get("/api/escaneos", auth=("equipo", "otra")).status_code == 401
-    assert c.get("/api/escaneos", auth=("equipo", "clave-secreta")).status_code == 200
-    assert c.get("/api/health").status_code == 200  # Render la usa para saber si la app está viva
+    assert c.get("/api/sesion").json()["configurado"] is True
+    assert c.post("/api/sesion/configurar", json={"usuario": "intruso", "nombre": "Intruso", "correo": "i@x.cl",
+                                                  "clave": "clave-intruso-1"}).status_code == 400
+    assert c.post("/api/sesion/ingresar", json={"usuario": "equipo", "clave": "clave-secreta"}).status_code == 200
+    assert c.get("/api/escaneos").status_code == 428  # primero la contraseña nueva
+    assert c.post("/api/sesion/cambiar-clave", json={"nueva": "otra-clave-larga"}).json()["detail"] == "Falta el correo"
+    r = c.post("/api/sesion/cambiar-clave", json={"nueva": "otra-clave-larga", "correo": "equipo@empresa.cl"})
+    assert r.json()["usuario"]["rol"] == "Admin" and r.json()["usuario"]["correo"] == "equipo@empresa.cl"
+    assert c.get("/api/escaneos").status_code == 200
+    assert c.get("/api/health").status_code == 200
     with pytest.raises(ValueError):
         create_app("sqlite://", acceso="sin-dos-puntos")
 

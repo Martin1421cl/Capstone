@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from ksecure.almacenamiento import reglas
 from ksecure.validators.patron import generar_patron
 from ksecure.validators.regla import ReglaValidator
-from ksecure.web.api.dependencias import get_db
+from ksecure.web.api.dependencias import SOLO_ADMIN, VISOR_O_MAS, get_db
 
 MAX_TEXTO_PRUEBA = 5000
 
@@ -44,12 +44,12 @@ def _400(e: ValueError):
     return HTTPException(400, str(e))
 
 
-@router.get("")
+@router.get("", dependencies=[VISOR_O_MAS])
 def listar(db: Session = Depends(get_db)):
     return reglas.listar(db)
 
 
-@router.put("/incluidas/{nombre}", status_code=204)
+@router.put("/incluidas/{nombre}", status_code=204, dependencies=[SOLO_ADMIN])
 def ajustar_incluido(nombre: str, datos: AjusteIn, db: Session = Depends(get_db)):
     """Activa o desactiva un validador incluido y le suma palabras de contexto."""
     try:
@@ -58,7 +58,7 @@ def ajustar_incluido(nombre: str, datos: AjusteIn, db: Session = Depends(get_db)
         raise HTTPException(404, "Validador no encontrado") from None
 
 
-@router.post("", status_code=201)
+@router.post("", status_code=201, dependencies=[SOLO_ADMIN])
 def crear(datos: ReglaIn, db: Session = Depends(get_db)):
     try:
         return reglas.guardar(db, datos.model_dump())
@@ -66,7 +66,7 @@ def crear(datos: ReglaIn, db: Session = Depends(get_db)):
         raise _400(e) from e
 
 
-@router.put("/{regla_id}")
+@router.put("/{regla_id}", dependencies=[SOLO_ADMIN])
 def actualizar(regla_id: int, datos: ReglaIn, db: Session = Depends(get_db)):
     try:
         return reglas.guardar(db, datos.model_dump(), regla_id)
@@ -76,7 +76,7 @@ def actualizar(regla_id: int, datos: ReglaIn, db: Session = Depends(get_db)):
         raise _400(e) from e
 
 
-@router.delete("/{regla_id}", status_code=204)
+@router.delete("/{regla_id}", status_code=204, dependencies=[SOLO_ADMIN])
 def borrar(regla_id: int, db: Session = Depends(get_db)):
     if not reglas.borrar(db, regla_id):
         raise HTTPException(404, "Regla no encontrada")
@@ -86,7 +86,7 @@ class EjemplosIn(BaseModel):
     ejemplos: list[str]
 
 
-@router.post("/patron")
+@router.post("/patron", dependencies=[SOLO_ADMIN])
 def patron_desde_ejemplos(datos: EjemplosIn):
     """Arma el patrón a partir de ejemplos del dato, para no tener que escribir expresiones regulares."""
     try:
@@ -96,7 +96,7 @@ def patron_desde_ejemplos(datos: EjemplosIn):
     return {"patron": patron, "descripcion": descripcion}
 
 
-@router.post("/probar")
+@router.post("/probar", dependencies=[SOLO_ADMIN])
 def probar(datos: PruebaIn):
     """Prueba una regla (sin guardarla) sobre un texto de ejemplo."""
     try:

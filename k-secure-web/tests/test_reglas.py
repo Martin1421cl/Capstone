@@ -1,9 +1,8 @@
 import pytest
-from fastapi.testclient import TestClient
 
 from ksecure.core.models import ConfidenceLevel, RiskLevel
 from ksecure.validators.regla import ParametrosRegla, ReglaValidator
-from ksecure.web.app import create_app
+from tests.conftest import app_con_admin
 
 PASAPORTE = {
     "nombre": "PASAPORTE", "descripcion": "Pasaporte chileno", "patron": r"\b[A-Z]\d{8}\b",
@@ -41,7 +40,7 @@ def test_patron_que_calza_vacio_no_genera_hallazgos():
 
 @pytest.fixture
 def client():
-    c = TestClient(create_app("sqlite://"))
+    c = app_con_admin()  # las reglas las cambia un administrador
     c.post("/api/auditor", json={"clave": "clave-auditor-123"})
     return c
 
