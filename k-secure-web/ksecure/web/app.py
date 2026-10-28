@@ -6,6 +6,9 @@ Páginas en http://localhost:8000 y documentación de la API en /docs (con sesi�
 Primer administrador:
 - En la nube, KSECURE_ACCESO="usuario:contraseña" lo crea al arrancar (si la base no tiene cuentas).
 - En un PC sin esa variable, la primera visita muestra la pantalla para crearlo.
+
+Correo para recuperar contraseñas: KSECURE_CORREO_URL y KSECURE_CORREO_SECRETO (ver ksecure/correo.py).
+Sin ellas, los códigos se escriben en la terminal.
 """
 
 import os
@@ -16,6 +19,7 @@ from fastapi.staticfiles import StaticFiles
 
 from ksecure.almacenamiento import usuarios
 from ksecure.almacenamiento.db import crear_sesiones
+from ksecure.correo import Correo
 from ksecure.web.api import auditor, escanear, reglas, resultados
 from ksecure.web.api import sesion as api_sesion
 from ksecure.web.api import usuarios as api_usuarios
@@ -24,9 +28,10 @@ from ksecure.web.sesion import proteger
 STATIC = Path(__file__).parent / "static"
 
 
-def create_app(db_url: str | None = None, acceso: str | None = None) -> FastAPI:
+def create_app(db_url: str | None = None, acceso: str | None = None, correo: Correo | None = None) -> FastAPI:
     app = FastAPI(title="K-Secure", description="Detección de datos sensibles chilenos en archivos y bases de datos")
     app.state.sesiones = crear_sesiones(db_url)
+    app.state.correo = correo or Correo.desde_entorno()
     acceso = acceso if acceso is not None else os.environ.get("KSECURE_ACCESO", "")
     if acceso:
         with app.state.sesiones() as db:

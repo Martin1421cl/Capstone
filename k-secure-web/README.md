@@ -60,6 +60,8 @@ ksecure/
 │   ├── usuarios.py         #   cuentas, roles, contraseñas (bcrypt), bloqueo y sesiones
 │   ├── repositorio.py      #   guardar, listar, resumir, columnas sensibles, revelar
 │   └── reglas.py           #   mantenedor de reglas: guarda reglas y arma los validadores activos
+├── correo.py               # envío de correos (código para recuperar la contraseña)
+├── restablecer.py          # plan B: contraseña temporal desde la terminal
 └── web/                    # CÓMO se muestra
     ├── app.py              #   FastAPI: monta la API y las páginas
     ├── sesion.py           #   login: exige sesión en toda la web y revisa el rol de cada endpoint
@@ -84,6 +86,18 @@ Abrir http://localhost:8000. La primera vez se pide **crear la cuenta de adminis
 **Usuarios** se crean las demás cuentas y la **clave de auditor** (sin ella no se puede escanear).
 La API queda documentada en http://localhost:8000/docs (con sesión iniciada).
 
+**¿Olvidaste tu contraseña?** En el login se pide un código de 6 dígitos que llega al correo de la cuenta
+(vence en 10 minutos). Si el envío de correos no está configurado (ver más abajo), el código aparece en
+la terminal donde corre `uvicorn`.
+
+Si nadie puede entrar como administrador y tampoco llega el correo:
+
+```bash
+python -m ksecure.restablecer                 # lista las cuentas
+python -m ksecure.restablecer emanuel         # muestra una contraseña temporal para esa cuenta
+python -m ksecure.restablecer emanuel --url "postgresql://..."   # lo mismo, en la base de Neon
+```
+
 ## Publicar en la nube (gratis: Render + Neon)
 
 1. **Neon** (https://neon.tech): crear un proyecto y copiar la *connection string* (`postgresql://...`).
@@ -95,8 +109,28 @@ La API queda documentada en http://localhost:8000/docs (con sesión iniciada).
      cambiar la contraseña y registrar el correo.
 3. Abrir la URL que entrega Render, ingresar con esa cuenta y **crear de inmediato la clave de auditor**
    en **Usuarios**.
+4. Configurar el **correo para recuperar contraseñas** (siguiente sección).
 
 El plan gratis de Render "duerme" la app tras 15 minutos sin uso: la primera visita tarda ~1 minuto.
+
+## Correo para recuperar contraseñas
+
+Render (plan gratis) bloquea el envío por SMTP, así que los correos salen por un **Apps Script** de la
+cuenta Gmail del equipo, publicado como aplicación web (gratis, ~100 correos al día):
+
+1. En https://script.google.com, con la cuenta del equipo: *Nuevo proyecto* → pegar
+   `docs/apps-script-correo.gs`.
+2. *Configuración del proyecto* → *Propiedades del script* → agregar `SECRETO` con una clave larga al azar.
+3. Ejecutar la función `probar` una vez (pide permisos y manda un correo de prueba a la misma cuenta).
+4. *Implementar* → *Nueva implementación* → tipo **Aplicación web**, ejecutar como **Yo**, acceso
+   **Cualquier usuario**. Copiar la URL que termina en `/exec`.
+5. En Render → *Environment*, agregar:
+   - `KSECURE_CORREO_URL`: esa URL.
+   - `KSECURE_CORREO_SECRETO`: el mismo valor de `SECRETO`.
+6. En K-Secure → **Usuarios** → *Correo para recuperar contraseñas* → **Enviar correo de prueba**.
+
+Si se edita el script, hay que publicarlo de nuevo: *Implementar* → *Administrar implementaciones* →
+lápiz → *Versión: Nueva versión*. La URL no cambia.
 
 ## Demo: base de un cliente ficticio
 

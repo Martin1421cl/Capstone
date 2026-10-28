@@ -1,9 +1,10 @@
 // Ingreso a K-Secure. La misma página sirve para tres momentos:
 // 1) configurar: K-Secure recién instalado, se crea la cuenta de administrador;
 // 2) ingresar: usuario y contraseña;
-// 3) cambiar: la cuenta tiene una contraseña temporal y debe crear la suya.
+// 3) cambiar: la cuenta tiene una contraseña temporal y debe crear la suya;
+// 4) recuperar: ¿olvidaste tu contraseña? Llega un código de 6 dígitos al correo (RF-14).
 import { api } from "./api.js";
-import { campoClave, campoTexto, el, estadoSesion, icono, salir } from "./ui.js";
+import { aviso, campoClave, campoTexto, el, estadoSesion, icono, salir } from "./ui.js";
 
 const contenido = document.getElementById("contenido");
 const params = new URLSearchParams(location.search);
@@ -85,7 +86,98 @@ function ingresar() {
       else location.replace(volver);
     },
     extra: el("p", { class: "muted login-ayuda" },
-      "¿Olvidaste tu contraseña? Pide a un administrador que la restablezca."),
+      el("button", { type: "button", class: "enlace", onclick: () => pedirCodigo() }, "¿Olvidaste tu contraseña?")),
+  });
+}
+
+// --- ¿Olvidaste tu contraseña? ------------------------------------------------------------------
+
+const ESPERA_REENVIO = 60;  // segundos, igual que en el servidor
+
+const enlaceIngresar = () => el("button", { type: "button", class: "enlace", onclick: () => ingresar() }, "Volver a ingresar");
+
+function pedirCodigo(cuenta = "") {
+  formulario({
+    titulo: "Recupera tu contraseña",
+    texto: "Escribe tu usuario o tu correo. Te enviaremos un código de 6 dígitos al correo de tu cuenta.",
+    campos: [campoTexto("cuenta", "Usuario o correo", { autocomplete: "username", value: cuenta })],
+    boton: "Enviar código",
+    alEnviar: async (datos) => {
+      const { minutos } = await api("/sesion/recuperar", { method: "POST", json: { cuenta: datos.cuenta } });
+      usarCodigo(datos.cuenta.trim(), minutos);
+    },
+    extra: el("p", { class: "muted login-ayuda" }, enlaceIngresar()),
+  });
+}
+
+// "Enviar otro código", que se habilita pasado un minuto.
+function botonReenviar(cuenta) {
+  const boton = el("button", { type: "button", class: "enlace" });
+  let quedan = ESPERA_REENVIO;
+  let reloj;
+  const pintar = () => {
+    boton.disabled = quedan > 0;
+    boton.textContent = quedan > 0 ? `Enviar otro código (${quedan} s)` : "Enviar otro código";
+  };
+  const contar = () => {
+    quedan = ESPERA_REENVIO;
+    pintar();
+    clearInterval(reloj);
+    reloj = setInterval(() => {
+      quedan -= 1;
+      pintar();
+      if (quedan <= 0 || !boton.isConnected) clearInterval(reloj);
+    }, 1000);
+  };
+  boton.addEventListener("click", async () => {
+    boton.disabled = true;
+    try {
+      await api("/sesion/recuperar", { method: "POST", json: { cuenta } });
+      aviso("Te enviamos un código nuevo. El anterior ya no sirve.");
+      contar();
+    } catch (e) {
+      aviso(e.message, "error");
+      boton.disabled = false;
+    }
+  });
+  contar();
+  return boton;
+}
+
+function campoCodigo() {
+  const entrada = el("input", {
+    id: "codigo", name: "codigo", class: "entrada-codigo", required: true, inputmode: "numeric",
+    autocomplete: "one-time-code", pattern: "[0-9]{6}", title: "Los 6 números que llegaron al correo",
+    spellcheck: "false", placeholder: "000000",
+  });
+  // Acepta "123 456" o "123-456" pegados desde el correo: deja solo los números.
+  entrada.addEventListener("input", () => { entrada.value = entrada.value.replace(/\D/g, "").slice(0, 6); });
+  return el("div", { class: "campo" }, el("label", { for: "codigo" }, "Código de 6 dígitos"), entrada);
+}
+
+function usarCodigo(cuenta, minutos = 10) {
+  const dondeMirar = estadoSesion.correo
+    ? el("span", {}, `Si la cuenta tiene un correo registrado, te llegó un código. Vence en ${minutos} minutos. `,
+        "¿No lo ves? Revisa la carpeta de spam.")
+    : el("span", {}, "Este K-Secure no tiene el envío de correos configurado: el código aparece en la terminal donde corre el servidor.");
+  formulario({
+    titulo: "Revisa tu correo",
+    texto: null,
+    nota: el("div", { class: "forma" }, icono("correo"), dondeMirar),
+    campos: [
+      campoCodigo(),
+      campoClave("clave", "Contraseña nueva", "new-password"),
+      campoClave("repetir", "Repite la contraseña", "new-password"),
+      el("p", { class: "ayuda-campo", style: "margin-top:-8px" }, ayudaClave),
+    ],
+    boton: "Guardar contraseña y entrar",
+    alEnviar: async (datos) => {
+      claveNueva(datos);
+      await api("/sesion/recuperar/confirmar", {
+        method: "POST", json: { cuenta, codigo: datos.codigo, clave: datos.clave } });
+      location.replace(volver);
+    },
+    extra: el("p", { class: "muted login-ayuda" }, botonReenviar(cuenta), el("br"), enlaceIngresar()),
   });
 }
 

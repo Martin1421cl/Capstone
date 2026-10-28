@@ -119,6 +119,9 @@ k-secure-web/ksecure/
 │   ├── repositorio.py      Guardar, listar, resumir, columnas sensibles, ordenar, revelar
 │   └── reglas.py           Mantenedor: valida, guarda reglas y arma los validadores activos
 │
+├── correo.py             Envío de correos por el Apps Script del equipo (código para recuperar la contraseña)
+├── restablecer.py        Plan B: contraseña temporal desde la terminal, sin entrar a la web
+│
 └── web/                  CÓMO SE MUESTRA
     ├── app.py              Crea la app FastAPI y monta API + páginas
     ├── sesion.py           Login: exige sesión en toda la web y revisa el rol en cada endpoint
@@ -278,6 +281,10 @@ enmascarados y datos cifrados que no puede abrir sin la clave del auditor.
 | Contraseñas con bcrypt; 5 intentos fallidos bloquean la cuenta 5 minutos | `almacenamiento/usuarios.py` |
 | Sesión en cookie HttpOnly + SameSite; vence a los 30 min sin uso o a las 12 h; la base guarda solo el hash del token | `web/sesion.py`, `almacenamiento/usuarios.py` |
 | Otra página no puede enviar acciones con la cookie del usuario (revisión del encabezado Origin) | `web/sesion.py` |
+| Recuperar la contraseña: código de 6 dígitos al correo, guardado con bcrypt, vence a los 10 min, sirve una vez y se anula tras 5 intentos | `almacenamiento/usuarios.py` |
+| "¿Olvidaste tu contraseña?" responde lo mismo exista o no la cuenta (el correo se manda después de responder), así no delata usuarios | `web/api/sesion.py` |
+| Máximo 1 código por minuto y 5 por hora por cuenta, y 80 al día en total (cuida el cupo de Gmail) | `almacenamiento/usuarios.py` |
+| El servicio de correo exige un secreto compartido; las pruebas nunca mandan correos reales | `correo.py`, `tests/conftest.py` |
 | 5 claves de auditor incorrectas seguidas bloquean 1 minuto, por cuenta | `web/api/auditor.py` |
 | El dato revelado se vuelve a ocultar a los 20 s | `static/js/resultados.js` |
 | El nombre del archivo subido nunca decide una ruta en disco | `web/api/escanear.py` |
@@ -318,6 +325,9 @@ Por dentro: cada regla se guarda en la tabla `reglas` y se convierte en un `Regl
 | `hallazgos` | Fuente, columna, posición, número de línea/fila, tipo, riesgo, confianza, contexto, **valor enmascarado**, **valor cifrado** |
 | `reglas` | Reglas personalizadas (patrón, ejemplos, validación, palabras, riesgo, confianza, visibles, activa) |
 | `ajustes_validadores` | Validadores incluidos: activo/apagado y palabras extra |
+| `usuarios` | Cuentas: usuario, nombre, correo, rol, **hash bcrypt** de la contraseña, bloqueo, último ingreso |
+| `sesiones` | Sesiones abiertas: **hash SHA-256** del token de la cookie, último uso y vencimiento |
+| `codigos_recuperacion` | Códigos para recuperar la contraseña: **hash bcrypt**, vencimiento, intentos, usado |
 
 Las tablas se crean solas al arrancar, y si una versión nueva agrega columnas, `db.py` las suma a una
 base existente sin perder datos.
@@ -329,6 +339,12 @@ base existente sin perder datos.
 | Método | Ruta | Para qué |
 |---|---|---|
 | GET | `/api/health` | Estado (lo usa Render; no pide contraseña) |
+| GET | `/api/sesion` | Si K-Secure está configurado, quién es el usuario de esta sesión y si el correo está configurado |
+| POST | `/api/sesion/ingresar` · `/salir` · `/cambiar-clave` · `/configurar` | Login, salir, cambiar la contraseña, crear el primer administrador |
+| POST | `/api/sesion/recuperar` | Mandar un código de 6 dígitos al correo de la cuenta (responde igual aunque no exista) |
+| POST | `/api/sesion/recuperar/confirmar` | Con el código, crear la contraseña nueva e iniciar sesión |
+| GET / POST / PUT | `/api/usuarios` · `/{id}` · `/{id}/restablecer` | Administrar cuentas (solo Admin) |
+| POST | `/api/usuarios/correo-prueba` | Mandar un correo de prueba al administrador (solo Admin) |
 | GET / POST | `/api/auditor` | Ver si existe la clave de auditor / crearla (una sola vez) |
 | POST | `/api/archivos` | Subir y escanear uno o varios archivos |
 | GET | `/api/bd/motores` | Motores soportados |
@@ -377,6 +393,9 @@ GitHub (Capstone, main) ──push──► Render (servidor Python, Ohio) ◄�
 - Variables de entorno en Render (**no están en el código**):
   - `KSECURE_DB_URL`: connection string de Neon.
   - `KSECURE_ACCESO`: `usuario:contraseña` del primer administrador (se usa solo si la base no tiene cuentas).
+  - `KSECURE_CORREO_URL` y `KSECURE_CORREO_SECRETO`: el Apps Script que manda los correos
+    (`docs/apps-script-correo.gs`). Render gratis bloquea el SMTP; Apps Script envía por HTTPS desde el
+    Gmail del equipo (~100 correos al día).
 - **Cada push a `main` se publica solo** (3–5 minutos, sin cortar el servicio). Esto responde el
   argumento de los 1000 computadores: se actualiza en un solo lugar.
 - Plan gratis: Render duerme la app tras 15 minutos sin uso; la primera visita tarda ~1 minuto.
@@ -386,7 +405,7 @@ GitHub (Capstone, main) ──push──► Render (servidor Python, Ohio) ◄�
 
 ## 13. Pruebas
 
-**159 tests automáticos** (`pytest`, en `k-secure-web/tests/`):
+**179 tests automáticos** (`pytest`, en `k-secure-web/tests/`):
 
 | Archivo | Tests | Qué cubre |
 |---|---|---|
@@ -395,7 +414,8 @@ GitHub (Capstone, main) ──push──► Render (servidor Python, Ohio) ◄�
 | `test_preprocesadores.py` | 16 | Codificaciones, docx, xlsx, pptx, odt, pdf, planillas como tablas |
 | `test_reglas.py` | 23 | Reglas personalizadas, patrón desde ejemplos, validadores incluidos, actualización de tablas |
 | `test_web.py` | 16 | API completa: bóveda, revelar, bloqueo, SQLite, historial, orden, vista por tipo, primer administrador, URL de Neon |
-| `test_sesion.py` | 18 | Login: ninguna ruta abierta, roles, bloqueo, contraseña temporal, vencimiento, cookie, último administrador |
+| `test_sesion.py` | 20 | Login: ninguna ruta abierta, roles, bloqueo, contraseña temporal, vencimiento, cookie, último administrador, plan B |
+| `test_recuperar.py` | 18 | Recuperar por correo: código, vencimiento, intentos, límites, no delatar cuentas, envío por Apps Script |
 | `test_cliente_simulado.py` | 3 | Cliente simulado: datos válidos y lo que K-Secure debe encontrar |
 
 Además se verificó con archivos reales del equipo (un `.xls` con 347 RUT, PDFs, bases SQLite de
@@ -417,6 +437,7 @@ ejemplo) y recorriendo la interfaz en un navegador automatizado.
 | 8. Nube | Render + Neon, candado de acceso, publicación desde el repositorio del equipo |
 | 9. Vista por tipo y cliente simulado | Hallazgos en columnas por tipo de dato; base ficticia de una empresa en Neon para las pruebas |
 | 10. Login con roles | Cuentas Admin / Auditor / Visor sin registro público, contraseñas bcrypt, sesiones que vencen |
+| 11. Recuperar contraseña | Código de 6 dígitos al correo, enviado por Apps Script desde el Gmail del equipo |
 
 ---
 
@@ -434,7 +455,7 @@ ejemplo) y recorriendo la interfaz en un navegador automatizado.
 ## 16. Limitaciones conocidas y próximos pasos
 
 **Limitaciones actuales**
-- Falta recuperar la contraseña por correo (hoy la restablece un administrador) y la bitácora de acciones.
+- Falta la bitácora de acciones (quién vio cada original).
 - Desde la nube solo se llega a bases que estén en internet (no a una base dentro de la red de una empresa).
 - No detecta: RUT sin guion o sin dígito verificador, texto dentro de imágenes o PDF escaneados (sin OCR),
   comentarios y notas al pie de Word, nombres y direcciones.
@@ -442,7 +463,7 @@ ejemplo) y recorriendo la interfaz en un navegador automatizado.
 - PostgreSQL: solo el esquema `public`. MySQL, SQL Server y Oracle no se han probado contra servidores reales.
 
 **Próximos pasos propuestos**
-1. **Login con roles** (Admin, Auditor, Visor) y registro de quién vio cada original.
+1. **Bitácora:** registro de quién vio cada original y de los cambios de cuentas y reglas.
 2. **Supresiones con HMAC** y página "Seguridad" que explique enmascarado, cifrado y hasheo.
 3. **Conector para bases dentro de la empresa:** un programa que se instala en un servidor del cliente,
    escanea ahí mismo y envía solo resultados enmascarados y cifrados (como el *self-hosted integration

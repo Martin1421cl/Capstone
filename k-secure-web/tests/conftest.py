@@ -1,5 +1,7 @@
 """Ayudas comunes de las pruebas: cuentas con sesión iniciada en una base en memoria."""
 
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -7,6 +9,9 @@ from ksecure.almacenamiento import usuarios
 from ksecure.web.app import create_app
 
 usuarios.RONDAS_BCRYPT = 4  # bcrypt más liviano: mismas reglas, pruebas rápidas
+# Las pruebas nunca mandan correos de verdad, aunque el PC tenga configurado el envío.
+os.environ.pop("KSECURE_CORREO_URL", None)
+os.environ.pop("KSECURE_CORREO_SECRETO", None)
 
 ADMIN = {"usuario": "admin", "nombre": "Ana Admin", "correo": "ana@empresa.cl", "clave": "clave-admin-123"}
 CLAVE_AUDITOR = "clave-auditor-123"

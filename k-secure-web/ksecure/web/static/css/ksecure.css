@@ -562,6 +562,14 @@ dialog.confirmar .acciones { margin-top: 20px; flex-wrap: wrap; }
 .ayuda-campo { font-size: .8rem; color: var(--muted); margin: 6px 0 0; }
 .enlace { all: unset; cursor: pointer; color: var(--cyan); text-decoration: underline; text-underline-offset: 3px; }
 .enlace:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 4px; }
+.enlace:disabled { cursor: default; color: var(--muted); text-decoration: none; }
+.login-ayuda br + .enlace { margin-top: 10px; display: inline-block; }
+/* Código de 6 dígitos que llega al correo */
+.entrada-codigo {
+  font-family: ui-monospace, Consolas, "Courier New", monospace; font-size: 1.6rem; font-weight: 600;
+  letter-spacing: .45em; text-align: center; padding-left: .45em; /* compensa el espacio tras el último dígito */
+}
+.entrada-codigo::placeholder { color: var(--muted); opacity: .35; }
 
 /* Página Usuarios */
 .tabla-usuarios td { white-space: normal; vertical-align: middle; }
@@ -585,10 +593,10 @@ dialog.confirmar .acciones { margin-top: 20px; flex-wrap: wrap; }
 .lista-check { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; font-size: .9rem; }
 .lista-check li { display: flex; gap: 8px; align-items: flex-start; }
 .lista-check svg { width: 16px; height: 16px; flex: none; margin-top: 3px; color: var(--risk); }
-.clave-auditor { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
-.clave-auditor .icon-badge { margin: 0; }
-.clave-auditor > div:nth-child(2) { flex: 1; min-width: 240px; }
-.clave-auditor h3 { margin: 0 0 4px; }
+.clave-auditor, .envio-correo { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+.clave-auditor .icon-badge, .envio-correo .icon-badge { margin: 0; }
+.clave-auditor > div:nth-child(2), .envio-correo > div:nth-child(2) { flex: 1; min-width: 240px; }
+.clave-auditor h3, .envio-correo h3 { margin: 0 0 4px; }
 .clave-temporal {
   display: grid; gap: 14px; margin: 16px 0 8px;
   padding: 14px 16px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border-strong);

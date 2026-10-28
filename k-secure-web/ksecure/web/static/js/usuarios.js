@@ -1,6 +1,6 @@
 // Administración de cuentas (solo Admin): crear, editar rol, restablecer contraseña y desactivar.
 import { api } from "./api.js";
-import { asegurarClaveAuditor, aviso, campoTexto, confirmar, dialogo, el, icono, usuario } from "./ui.js";
+import { asegurarClaveAuditor, aviso, campoTexto, confirmar, dialogo, el, estadoSesion, icono, usuario } from "./ui.js";
 
 const fechaCorta = (iso) => new Date(iso).toLocaleString("es-CL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
@@ -55,8 +55,8 @@ async function nuevaCuenta() {
   ], "Crear cuenta", async (form) => api("/usuarios", { method: "POST", json: Object.fromEntries(new FormData(form)) }),
   { iconoNombre: "usuarios", clase: "ancho-medio" });
   if (!creada) return;
-  await cargar();
-  await mostrarClaveTemporal(creada.usuario, creada.clave_temporal, "Cuenta creada");
+  await mostrarClaveTemporal(creada.usuario, creada.clave_temporal, "Cuenta creada");  // primero mostrarla
+  cargar();
 }
 
 async function editar(u) {
@@ -83,8 +83,8 @@ async function restablecer(u) {
   if (!ok) return;
   try {
     const r = await api(`/usuarios/${u.id}/restablecer`, { method: "POST" });
-    await cargar();
-    await mostrarClaveTemporal(r.usuario, r.clave_temporal, "Contraseña restablecida");
+    await mostrarClaveTemporal(r.usuario, r.clave_temporal, "Contraseña restablecida");  // primero mostrarla
+    cargar();
   } catch (e) {
     aviso(e.message, "error");
   }
@@ -133,7 +133,8 @@ function fila(u) {
     el("td", { "data-label": "Último ingreso", class: "muted" }, u.ultimo_ingreso ? fechaCorta(u.ultimo_ingreso) : "Nunca"),
     el("td", { class: "acciones-fila" },
       el("button", { class: "btn btn-sm", type: "button", onclick: () => editar(u) }, icono("lapiz"), "Editar"),
-      el("button", { class: "btn btn-sm", type: "button", onclick: () => restablecer(u) }, icono("llave"), "Restablecer"),
+      // Tu propia contraseña se cambia desde el menú con tu nombre (restablecerla cerraría tu sesión).
+      soyYo ? null : el("button", { class: "btn btn-sm", type: "button", onclick: () => restablecer(u) }, icono("llave"), "Restablecer"),
       soyYo ? null : el("button", {
         class: `btn btn-sm ${u.activo ? "btn-danger" : ""}`, type: "button", onclick: () => cambiarEstado(u),
       }, icono("encender"), u.activo ? "Desactivar" : "Activar")));
@@ -159,6 +160,31 @@ async function pintarClaveAuditor() {
     }, icono("llave"), "Crear clave de auditor")].filter(Boolean));
 }
 
+// ¿Olvidaste tu contraseña? manda un código al correo. Aquí se ve si el envío está listo y se prueba.
+function pintarCorreo() {
+  const listo = estadoSesion.correo;
+  const probar = el("button", { class: "btn", type: "button" }, icono("correo"), "Enviar correo de prueba");
+  probar.addEventListener("click", async () => {
+    probar.disabled = true;
+    try {
+      const r = await api("/usuarios/correo-prueba", { method: "POST" });
+      aviso(r.configurado ? `Correo enviado a ${r.para}. Revisa también el spam.` : "Sin envío configurado: el correo se escribió en la terminal del servidor.");
+    } catch (e) {
+      aviso(e.message, "error");
+    } finally {
+      probar.disabled = false;
+    }
+  });
+  $("envio-correo").replaceChildren(
+    el("div", { class: `icon-badge ${listo ? "" : "peligro"}` }, icono("correo")),
+    el("div", {},
+      el("h3", {}, listo ? "Configurado" : "Sin configurar"),
+      el("p", { class: "muted", style: "margin:0" }, listo
+        ? `Quien olvide su contraseña recibe un código de 6 dígitos en el correo de su cuenta. La prueba llega a ${usuario.correo || "tu correo"}.`
+        : "Los códigos para recuperar la contraseña se escriben en la terminal del servidor en vez de enviarse. Para enviarlos, define KSECURE_CORREO_URL y KSECURE_CORREO_SECRETO (ver el README).")),
+    probar);
+}
+
 $("roles").append(...ROLES_INFO.map((r) =>
   el("div", { class: `card rol-card rol-${r.id}` },
     el("span", { class: `badge rol-${r.id}` }, r.titulo),
@@ -169,3 +195,4 @@ $("nuevo").append(icono("mas"), "Nueva cuenta");
 $("nuevo").addEventListener("click", nuevaCuenta);
 cargar();
 pintarClaveAuditor();
+pintarCorreo();

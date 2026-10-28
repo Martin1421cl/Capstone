@@ -5,6 +5,7 @@
 - Contraseñas con hash bcrypt. 5 intentos fallidos bloquean la cuenta 5 minutos.
 - La cookie de sesión lleva un token al azar; la base guarda solo su SHA-256, así una copia
   de la base no sirve para entrar. Una sesión vence tras 30 minutos sin uso o a las 12 horas.
+- ¿Olvidaste tu contraseña? Un código de 6 dígitos llega al correo de la cuenta (RF-14).
 """
 
 import hashlib
@@ -13,10 +14,10 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
-from ksecure.almacenamiento.modelos import Sesion, Usuario
+from ksecure.almacenamiento.modelos import CodigoRecuperacion, Sesion, Usuario
 
 ADMIN, AUDITOR, VISOR = "Admin", "Auditor", "Visor"
 NIVEL = {VISOR: 1, AUDITOR: 2, ADMIN: 3}  # cada rol puede todo lo del anterior
@@ -29,6 +30,14 @@ INACTIVIDAD = timedelta(minutes=30)
 DURACION_MAXIMA = timedelta(hours=12)
 REFRESCO = timedelta(seconds=60)  # cada cuánto se anota el último uso (menos escrituras en la base)
 RONDAS_BCRYPT = 12                # las pruebas lo bajan para correr rápido
+
+# Recuperar la contraseña con un código al correo
+CODIGO_VIGENCIA = timedelta(minutes=10)
+CODIGO_INTENTOS = 5                 # intentos fallidos y el código se anula
+CODIGO_ESPERA = timedelta(seconds=60)  # entre un código y el siguiente de la misma cuenta
+CODIGOS_POR_HORA = 5                # por cuenta
+CODIGOS_POR_DIA = 80                # entre todas: Gmail permite unos 100 correos al día
+CODIGO_INVALIDO = "El código no es correcto o ya venció"
 
 _USUARIO = re.compile(r"^[a-z0-9._-]{3,30}$")
 _CORREO = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -313,6 +322,76 @@ def cerrar_sesion(db: Session, token: str | None):
 def cerrar_sesiones(db: Session, usuario_id: int):
     for s in db.scalars(select(Sesion).where(Sesion.usuario_id == usuario_id)):
         db.delete(s)
+
+
+# --- Recuperar la contraseña por correo (RF-14) -------------------------------------------------
+
+def _buscar_cuenta(db: Session, cuenta: str) -> Usuario | None:
+    """Por usuario o por correo, sin importar mayúsculas."""
+    texto = (cuenta or "").strip().lower()
+    if not texto:
+        return None
+    campo = Usuario.correo if "@" in texto else Usuario.usuario
+    return db.scalar(select(Usuario).where(campo == texto))
+
+
+def pedir_codigo(db: Session, cuenta: str) -> tuple[Usuario, str] | None:
+    """Crea un código nuevo y devuelve (cuenta, código) para mandarlo por correo.
+
+    Devuelve None si no corresponde enviarlo: la cuenta no existe, está desactivada, no tiene
+    correo o ya pidió demasiados códigos. La web responde lo mismo en todos los casos, así no
+    delata qué cuentas existen. Pedir un código nuevo anula el anterior.
+    """
+    u = _buscar_cuenta(db, cuenta)
+    if u is None or not u.activo or not u.correo:
+        return None
+    momento = ahora()
+    db.execute(delete(CodigoRecuperacion).where(CodigoRecuperacion.creado < momento - timedelta(days=1)))
+    recientes = list(db.scalars(select(CodigoRecuperacion.creado).where(
+        CodigoRecuperacion.usuario_id == u.id, CodigoRecuperacion.creado > momento - timedelta(hours=1))))
+    del_dia = db.scalar(select(func.count()).select_from(CodigoRecuperacion))
+    if (len(recientes) >= CODIGOS_POR_HORA or del_dia >= CODIGOS_POR_DIA
+            or any(c > momento - CODIGO_ESPERA for c in recientes)):
+        db.commit()
+        return None
+    db.execute(update(CodigoRecuperacion).where(CodigoRecuperacion.usuario_id == u.id,
+                                                CodigoRecuperacion.usado.is_(False)).values(usado=True))
+    codigo = f"{secrets.randbelow(10**6):06d}"
+    db.add(CodigoRecuperacion(usuario_id=u.id, codigo_hash=hash_clave(codigo), creado=momento,
+                              expira=momento + CODIGO_VIGENCIA, intentos=0, usado=False))
+    db.commit()
+    return u, codigo
+
+
+def recuperar_clave(db: Session, cuenta: str, codigo: str, nueva: str) -> Usuario:
+    """Con el código del correo crea la contraseña nueva.
+
+    También desbloquea la cuenta, quita la contraseña temporal y cierra todas sus sesiones.
+    Cualquier problema con la cuenta o el código da el mismo mensaje.
+    """
+    validar_clave(nueva)
+    codigo = re.sub(r"\D", "", codigo or "")
+    u = _buscar_cuenta(db, cuenta)
+    vigente = None
+    if u is not None and u.activo and len(codigo) == 6:
+        vigente = db.scalar(select(CodigoRecuperacion).where(
+            CodigoRecuperacion.usuario_id == u.id, CodigoRecuperacion.usado.is_(False),
+            CodigoRecuperacion.expira > ahora()).order_by(CodigoRecuperacion.creado.desc()).limit(1))
+    if vigente is None:
+        _comparar_con_falso(codigo)  # mismo tiempo de respuesta que con una cuenta real
+        raise ErrorUsuario(CODIGO_INVALIDO)
+    if not clave_correcta(codigo, vigente.codigo_hash):
+        vigente.intentos = (vigente.intentos or 0) + 1
+        vigente.usado = vigente.intentos >= CODIGO_INTENTOS
+        db.commit()
+        raise ErrorUsuario(CODIGO_INVALIDO)
+    validar_clave(nueva, u.usuario)  # antes de gastar el código: si falla, se puede reintentar
+    vigente.usado = True
+    u.clave_hash, u.debe_cambiar_clave = hash_clave(nueva), False
+    u.intentos_fallidos, u.bloqueado_hasta = 0, None
+    cerrar_sesiones(db, u.id)
+    db.commit()
+    return u
 
 
 def publico(u: Usuario) -> dict:

@@ -129,3 +129,21 @@ class Sesion(Base):
     expira: Mapped[datetime] = mapped_column()  # tope absoluto, aunque se siga usando
 
     usuario: Mapped[Usuario] = relationship(back_populates="sesiones")
+
+
+class CodigoRecuperacion(Base):
+    """Código de 6 dígitos que llega al correo para crear una contraseña nueva (RF-14).
+
+    Se guarda solo su hash bcrypt. Vence a los 10 minutos, sirve una vez y se anula tras 5
+    intentos fallidos. Las filas quedan un día para limitar cuántos códigos se piden.
+    """
+
+    __tablename__ = "codigos_recuperacion"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), index=True)
+    codigo_hash: Mapped[str] = mapped_column(String(100))
+    creado: Mapped[datetime] = mapped_column(index=True)
+    expira: Mapped[datetime] = mapped_column()
+    intentos: Mapped[int] = mapped_column(Integer, default=0)
+    usado: Mapped[bool] = mapped_column(Boolean, default=False)

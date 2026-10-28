@@ -57,7 +57,7 @@ def test_paginas_llevan_al_login_y_recuerdan_a_donde_iba(admin):
 
 def test_configurar_solo_la_primera_vez_y_con_datos_validos():
     c = TestClient(create_app("sqlite://"))
-    assert c.get("/api/sesion").json() == {"configurado": False, "usuario": None, "largo_minimo": 10}
+    assert c.get("/api/sesion").json() == {"configurado": False, "usuario": None, "largo_minimo": 10, "correo": False}
     malos = [({"clave": "corta"}, "al menos 10"), ({"correo": "sin-arroba"}, "correo no es válido"),
              ({"usuario": "a b"}, "usuario debe tener"), ({"clave": "admin"}, "al menos 10")]
     for cambio, mensaje in malos:
@@ -261,3 +261,32 @@ def test_regla_del_ultimo_administrador_en_la_capa_de_datos(admin):
         otro = Usuario(id=999, rol="Admin")
         with pytest.raises(usuarios.ErrorUsuario, match="al menos un administrador"):
             usuarios.actualizar(s, ana.id, otro, ana.nombre, ana.correo, "Visor", True)
+
+
+def test_tu_propia_cuenta_no_se_restablece_desde_la_web(admin):
+    yo = admin.get("/api/sesion").json()["usuario"]
+    r = admin.post(f"/api/usuarios/{yo['id']}/restablecer")
+    assert r.status_code == 400 and "Cambiar contraseña" in r.json()["detail"]
+    assert admin.get("/api/escaneos").status_code == 200  # la sesión sigue abierta
+
+
+def test_plan_b_restablecer_desde_la_terminal(tmp_path, capsys):
+    """Si nadie puede entrar como admin, el comando restablece la cuenta directo en la base."""
+    from ksecure import restablecer
+    url = f"sqlite:///{tmp_path / 'interna.db'}"
+    c = TestClient(create_app(url))
+    assert c.post("/api/sesion/configurar", json=ADMIN).status_code == 201
+
+    assert restablecer.main(["--url", url]) == 0
+    assert "admin" in capsys.readouterr().out
+    assert restablecer.main(["no-existe", "--url", url]) == 1
+    capsys.readouterr()
+    assert restablecer.main(["ADMIN", "--url", url]) == 0
+    temporal = capsys.readouterr().out.split("Contraseña temporal: ")[1].split()[0]
+
+    assert c.get("/api/escaneos").status_code == 401           # su sesión se cerró
+    assert ingresar(c.app, "admin", ADMIN["clave"])[1].status_code == 401
+    nuevo, r = ingresar(c.app, "admin", temporal)
+    assert r.status_code == 200 and r.json()["usuario"]["debe_cambiar_clave"] is True
+    assert nuevo.post("/api/sesion/cambiar-clave", json={"nueva": "otra-clave-admin"}).status_code == 200
+    assert nuevo.get("/api/usuarios").status_code == 200

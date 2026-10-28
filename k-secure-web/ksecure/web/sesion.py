@@ -20,7 +20,8 @@ from ksecure.almacenamiento.usuarios import ADMIN, AUDITOR, NIVEL
 COOKIE = "ksecure_sesion"
 LOGIN = "/login.html"
 RECURSOS = ("/css/", "/js/", "/img/")  # estilos, scripts e imágenes: no tienen datos
-API_PUBLICA = {"/api/health", "/api/sesion", "/api/sesion/ingresar", "/api/sesion/configurar"}
+API_PUBLICA = {"/api/health", "/api/sesion", "/api/sesion/ingresar", "/api/sesion/configurar",
+               "/api/sesion/recuperar", "/api/sesion/recuperar/confirmar"}
 API_CON_CLAVE_TEMPORAL = {"/api/sesion", "/api/sesion/salir", "/api/sesion/cambiar-clave"}
 PAGINAS_POR_ROL = {"/archivos.html": AUDITOR, "/base-datos.html": AUDITOR, "/usuarios.html": ADMIN}
 METODOS_SEGUROS = {"GET", "HEAD", "OPTIONS"}
