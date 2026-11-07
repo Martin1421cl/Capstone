@@ -1,0 +1,58 @@
+# K-Secure + PostgreSQL (base interna) + base de un cliente ficticio para la demo.
+#
+#   1. cp .env.example .env      (y cambiar las contraseñas)
+#   2. docker compose up --build
+#   3. Abrir http://localhost:8000 e ingresar con KSECURE_ACCESO
+#
+# Para escanear la base del cliente ficticio desde K-Secure: Base de datos → PostgreSQL con
+#   servidor: cliente-demo · puerto: 5432 · base: cliente_demo · usuario/clave: los de CLIENTE_DB_* en .env
+
+services:
+  app:
+    build: .
+    container_name: ksecure-app
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      KSECURE_DB_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Base interna de K-Secure (escaneos, hallazgos cifrados, usuarios, bitácora).
+  db:
+    image: postgres:16-alpine
+    container_name: ksecure-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ksecure-datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # Base de un cliente ficticio con datos chilenos sintéticos (demo/cliente_demo.sql).
+  # Simula la base que K-Secure escanearía en una empresa real. Solo para pruebas y demostraciones.
+  cliente-demo:
+    image: postgres:16-alpine
+    container_name: ksecure-cliente-demo
+    profiles: ["demo"]
+    environment:
+      POSTGRES_USER: ${CLIENTE_DB_USER}
+      POSTGRES_PASSWORD: ${CLIENTE_DB_PASSWORD}
+      POSTGRES_DB: cliente_demo
+    volumes:
+      - ./demo/cliente_demo.sql:/docker-entrypoint-initdb.d/01_cliente_demo.sql:ro
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+
+volumes:
+  ksecure-datos:

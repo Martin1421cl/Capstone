@@ -4,3 +4,6 @@ __pycache__/
 .pytest_cache/
 data/
 cliente_simulado*.db
+
+# Variables de entorno con contraseñas: nunca al repositorio
+.env
