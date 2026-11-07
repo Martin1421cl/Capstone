@@ -97,16 +97,21 @@ Cómo debe tratar la organización cliente la información de cada nivel, y cóm
 
 ## 6. Relación con la política de clasificación de Duoc UC
 
-La política de clasificación de datos de Duoc UC fue entregada por el docente como referencia para este marco.
-Los cuatro niveles de K-Secure deben revisarse contra los niveles de esa política antes del informe final, para
-indicar a qué nivel de la política corresponde cada uno:
+La Guía 1.5 compromete alinear este marco con la **Política de Clasificación de Datos e Información de Duoc UC**,
+entregada por el docente como referencia. Esta alineación está **planificada para el sprint 7** y se hará así:
 
-| Nivel K-Secure | Nivel equivalente en la política de Duoc UC |
+1. Identificar los niveles que define la política de Duoc UC y el criterio de cada uno (quién accede, impacto si se filtra).
+2. Asociar cada nivel de K-Secure (Público, Interno, Confidencial, Restringido) al nivel de la política con el impacto
+   equivalente, usando las definiciones de la sección 2 de este documento.
+3. Si la política usa una cantidad distinta de niveles, mantener los cuatro de K-Secure (siguiendo el criterio OEA/AWS de
+   la sección 1) e indicar cuál nivel de la política cubre a cada uno.
+4. Si algún tipo de dato cambia de nivel, ajustar su riesgo en el validador correspondiente y en la tabla de la sección 4.
+
+| | |
 |---|---|
-| Público | *(completar con el documento entregado por el docente)* |
-| Interno | *(completar)* |
-| Confidencial | *(completar)* |
-| Restringido | *(completar)* |
+| **Estado** | Pendiente (sprint 7) |
+| **Responsable** | Emanuel Farías |
+| **Resultado** | Tabla de equivalencia K-Secure ↔ política de Duoc UC, agregada en esta sección |
 
 ---
 
