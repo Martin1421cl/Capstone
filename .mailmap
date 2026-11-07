@@ -1,0 +1,5 @@
+# Une los distintos usuarios de Git/GitHub de cada integrante bajo su nombre real.
+# Lo usan git log, git shortlog y git blame. Formato: Nombre <correo canónico> <correo usado en el commit>
+Camilo Fuenzalida <fuenzalidacamilo509@gmail.com> <135772879+Fruna1@users.noreply.github.com>
+Emanuel Farías <ema.farias@duocuc.cl> <164016170+Emanuel2234@users.noreply.github.com>
+Martín Campos <163922465+Martin1421cl@users.noreply.github.com> <163922465+Martin1421cl@users.noreply.github.com>
