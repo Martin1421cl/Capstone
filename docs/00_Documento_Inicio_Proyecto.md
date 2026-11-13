@@ -12,7 +12,7 @@
 | **Versión** | 1.1 · 31/10/2026 (la 1.0 es la Guía 1.5 de la Fase 1) |
 
 Este documento reúne en un solo lugar la definición del proyecto. Parte de la
-[Guía 1.5 – Definición del proyecto](<../1.5_GuiaEstudiante_Fase1_DefinicionProyecto (1).docx>) entregada en la
+[Guía 1.5 – Definición del proyecto](<../Fase 1/Grupal/1.5_GuiaEstudiante_Fase1_DefinicionProyecto (1).docx>) entregada en la
 Fase 1 y agrega lo decidido durante la Fase 2.
 
 ---

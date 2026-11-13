@@ -14,16 +14,16 @@ Dónde está cada documento que se revisa en el repositorio. Las rutas son relat
 
 | Evidencia | Dónde está |
 |---|---|
-| **Documento de inicio de proyecto** | [`docs/00_Documento_Inicio_Proyecto.md`](docs/00_Documento_Inicio_Proyecto.md) (problema, justificación, objetivos, stakeholders, alcance del MVP, restricciones, riesgos y decisiones) · versión de la Fase 1: [`1.5_GuiaEstudiante_Fase1_DefinicionProyecto (1).docx`](<1.5_GuiaEstudiante_Fase1_DefinicionProyecto (1).docx>) |
+| **Documento de inicio de proyecto** | [`docs/00_Documento_Inicio_Proyecto.md`](docs/00_Documento_Inicio_Proyecto.md) (problema, justificación, objetivos, stakeholders, alcance del MVP, restricciones, riesgos y decisiones) · versión de la Fase 1: [`Fase 1/Grupal/1.5_GuiaEstudiante_Fase1_DefinicionProyecto (1).docx`](<Fase 1/Grupal/1.5_GuiaEstudiante_Fase1_DefinicionProyecto (1).docx>) |
 | **Metodología declarada y justificada** | [`docs/agil/00_Metodologia.md`](docs/agil/00_Metodologia.md) (Scrum: justificación, roles, ceremonias y cadencia) · sección [Metodología](#metodología) de este README · Guía 1.5, sección 5 |
 | **Product Vision** | [`docs/agil/01_Product_Vision.md`](docs/agil/01_Product_Vision.md) |
 | **Product Backlog** | [`docs/agil/02_Product_Backlog.md`](docs/agil/02_Product_Backlog.md) |
 | **Sprint Backlog** | [`docs/agil/03_Sprint_Backlog.md`](docs/agil/03_Sprint_Backlog.md) (incluye los commits de cada sprint) |
 | **Definition of Done** (criterios de aceptación) | [`docs/agil/04_Definition_of_Done.md`](docs/agil/04_Definition_of_Done.md) · criterios por historia en el Product Backlog |
 | **Retrospectivas** | [`docs/agil/05_Retrospectivas.md`](docs/agil/05_Retrospectivas.md) |
-| **Especificación de requisitos (SRS / ERS)** | [`03 - Especificación de Requerimientos de Software (ERS).docx`](<03 - Especificación de Requerimientos de Software (ERS).docx>) · [`04 - Especificación de Casos de Uso.docx`](<04 - Especificación de Casos de Uso.docx>) · [`docs/Matriz_de_Trazabilidad.md`](docs/Matriz_de_Trazabilidad.md) (requisito → caso de uso → historia → código → prueba) |
+| **Especificación de requisitos (SRS / ERS)** | [`Fase 2/Grupal/03 - Especificación de Requerimientos de Software (ERS).docx`](<Fase 2/Grupal/03 - Especificación de Requerimientos de Software (ERS).docx>) · [`Fase 2/Grupal/04 - Especificación de Casos de Uso.docx`](<Fase 2/Grupal/04 - Especificación de Casos de Uso.docx>) · [`docs/Matriz_de_Trazabilidad.md`](docs/Matriz_de_Trazabilidad.md) (requisito → caso de uso → historia → código → prueba) |
 | **README del repositorio** | Este archivo · README técnico de la app en [`k-secure-web/README.md`](k-secure-web/README.md) |
-| **Arquitectura** | [`05 - Documento de Arquitectura de Software (SAD 4+1).docx`](<05 - Documento de Arquitectura de Software (SAD 4+1).docx>) · [`k-secure-web/docs/ARQUITECTURA.md`](k-secure-web/docs/ARQUITECTURA.md) · sección [Arquitectura](#arquitectura) de este README |
+| **Arquitectura** | [`Fase 2/Grupal/05 - Documento de Arquitectura de Software (SAD 4+1).docx`](<Fase 2/Grupal/05 - Documento de Arquitectura de Software (SAD 4+1).docx>) · [`k-secure-web/docs/ARQUITECTURA.md`](k-secure-web/docs/ARQUITECTURA.md) · sección [Arquitectura](#arquitectura) de este README |
 | **Modelo de datos** | [`docs/diagramas/01_Modelo_Entidad_Relacion.md`](docs/diagramas/01_Modelo_Entidad_Relacion.md) · tablas en [`k-secure-web/ksecure/almacenamiento/modelos.py`](k-secure-web/ksecure/almacenamiento/modelos.py) · base demo en [`k-secure-web/demo/cliente_demo.sql`](k-secure-web/demo/cliente_demo.sql) |
 | **Diagramas UML** | Clases: [`docs/diagramas/02_UML_Diagrama_de_Clases.md`](docs/diagramas/02_UML_Diagrama_de_Clases.md) · Secuencia: [`docs/diagramas/03_UML_Diagrama_de_Secuencia.md`](docs/diagramas/03_UML_Diagrama_de_Secuencia.md) · Componentes y despliegue: [`docs/diagramas/04_UML_Diagrama_de_Componentes.md`](docs/diagramas/04_UML_Diagrama_de_Componentes.md) · Casos de uso: `04 - Especificación de Casos de Uso.docx` · Imágenes: [`docs/diagramas/img/`](docs/diagramas/img/) |
 | **Requisitos no funcionales** | [`docs/Requisitos_No_Funcionales.md`](docs/Requisitos_No_Funcionales.md) (servidor, software, entorno) · RNF-01 a RNF-12 en la ERS |
@@ -35,24 +35,35 @@ Dónde está cada documento que se revisa en el repositorio. Las rutas son relat
 
 ### Entregas de la asignatura
 
+Organizadas por fase. Cada fase tiene una carpeta `Grupal/` y una `Individual/`; los archivos individuales llevan el
+formato `Apellido_Nombre_...`.
+
+#### Fase 1 · [`Fase 1/`](<Fase 1/>)
+
 | Entrega | Tipo | Dónde está |
 |---|---|---|
-| 1.1 Autoevaluación de competencias Fase 1 | Individual | Carpeta de cada integrante: `Autoevaluaciones <Nombre>/<Apellido>_<Nombre>_1.1_APT122_AutoevaluacionCompetenciasFase1.docx` |
-| 1.2 Diario de reflexión Fase 1 | Individual | `Autoevaluaciones <Nombre>/<Apellido>_<Nombre>_1.2_APT122_DiarioReflexionFase1.docx` |
-| 1.3 Autoevaluación Fase 1 | Individual | `Autoevaluaciones <Nombre>/<Apellido>_<Nombre>_1.3_APT122_AutoevaluacionFase1.docx` |
-| Presentación del proyecto Fase 1 | Grupal | [`Presentacion_Proyecto_Fase1_K-Secure.pptx`](Presentacion_Proyecto_Fase1_K-Secure.pptx) |
-| 1.4 Formativa Fase 1 | Grupal | [`1.4_Informe_kSecure_fase1.docx`](1.4_Informe_kSecure_fase1.docx) |
-| 1.5 Definición del proyecto | Grupal | [`1.5_GuiaEstudiante_Fase1_DefinicionProyecto (1).docx`](<1.5_GuiaEstudiante_Fase1_DefinicionProyecto (1).docx>) |
-| 2.1 Diario de reflexión Fase 2 | Individual | `Autoevaluaciones <Nombre>/<Apellido>_<Nombre>_2.1_APT122_DiarioReflexionFase2.docx` |
-| 2.3 Informe de avance Fase 2 | Grupal | [`2.3_APT122_InformeAvance_Fase2_K-Secure.docx`](2.3_APT122_InformeAvance_Fase2_K-Secure.docx) |
-| 2.4 Desarrollo del proyecto Fase 2 | Grupal | [`2.4_GuiaEstudiante_Fase2_DesarrolloProyecto_APT_COMPLETO.docx`](2.4_GuiaEstudiante_Fase2_DesarrolloProyecto_APT_COMPLETO.docx) |
-| 2.6 Informe final Fase 2 | Grupal | [`2.6_GuiaEstudiante_Fase2_InformeFinal_APT_COMPLETO.docx`](2.6_GuiaEstudiante_Fase2_InformeFinal_APT_COMPLETO.docx) |
-| Presentación del proyecto Fase 2 | Grupal | [`Presentacion_Proyecto_Fase2_K-Secure.pptx`](Presentacion_Proyecto_Fase2_K-Secure.pptx) |
-| Autoevaluación Fase 2 | Individual | `Autoevaluacion_Fase2_<Nombre>.docx` (raíz) |
+| 1.1 Autoevaluación de competencias | Individual | [`Fuenzalida_Camilo_1.1_APT122_AutoevaluacionCompetenciasFase1.docx`](<Fase 1/Individual/Fuenzalida_Camilo_1.1_APT122_AutoevaluacionCompetenciasFase1.docx>) · [`Farias_Emanuel_1.1_APT122_AutoevaluacionCompetenciasFase1.docx`](<Fase 1/Individual/Farias_Emanuel_1.1_APT122_AutoevaluacionCompetenciasFase1.docx>) · [`Campos_Martin_1.1_APT122_AutoevaluacionCompetenciasFase1.docx`](<Fase 1/Individual/Campos_Martin_1.1_APT122_AutoevaluacionCompetenciasFase1.docx>) |
+| 1.2 Diario de reflexión | Individual | [`Fuenzalida_Camilo_1.2_APT122_DiarioReflexionFase1.docx`](<Fase 1/Individual/Fuenzalida_Camilo_1.2_APT122_DiarioReflexionFase1.docx>) · [`Farias_Emanuel_1.2_APT122_DiarioReflexionFase1.docx`](<Fase 1/Individual/Farias_Emanuel_1.2_APT122_DiarioReflexionFase1.docx>) · [`Campos_Martin_1.2_APT122_DiarioReflexionFase1.docx`](<Fase 1/Individual/Campos_Martin_1.2_APT122_DiarioReflexionFase1.docx>) |
+| 1.3 Autoevaluación | Individual | [`Fuenzalida_Camilo_1.3_APT122_AutoevaluacionFase1.docx`](<Fase 1/Individual/Fuenzalida_Camilo_1.3_APT122_AutoevaluacionFase1.docx>) · [`Farias_Emanuel_1.3_APT122_AutoevaluacionFase1.docx`](<Fase 1/Individual/Farias_Emanuel_1.3_APT122_AutoevaluacionFase1.docx>) · [`Campos_Martin_1.3_APT122_AutoevaluacionFase1.docx`](<Fase 1/Individual/Campos_Martin_1.3_APT122_AutoevaluacionFase1.docx>) |
+| 1.4 Formativa | Grupal | [`Fase 1/Grupal/1.4_Informe_kSecure_fase1.docx`](<Fase 1/Grupal/1.4_Informe_kSecure_fase1.docx>) |
+| 1.5 Definición del proyecto | Grupal | [`Fase 1/Grupal/1.5_GuiaEstudiante_Fase1_DefinicionProyecto (1).docx`](<Fase 1/Grupal/1.5_GuiaEstudiante_Fase1_DefinicionProyecto (1).docx>) |
+| Presentación del proyecto | Grupal | [`Fase 1/Grupal/Presentacion_Proyecto_Fase1_K-Secure.pptx`](<Fase 1/Grupal/Presentacion_Proyecto_Fase1_K-Secure.pptx>) |
 
-Carpetas de cada integrante: [`Autoevaluaciones Camilo Fuenzalida/`](<Autoevaluaciones Camilo Fuenzalida/>) ·
-[`Autoevaluaciones Emanuel Farias/`](<Autoevaluaciones Emanuel Farias/>) ·
-[`Autoevaluaciones Martin Campos/`](<Autoevaluaciones Martin Campos/>)
+#### Fase 2 · [`Fase 2/`](<Fase 2/>)
+
+| Entrega | Tipo | Dónde está |
+|---|---|---|
+| 2.1 Diario de reflexión | Individual | [`Fuenzalida_Camilo_2.1_APT122_DiarioReflexionFase2.docx`](<Fase 2/Individual/Fuenzalida_Camilo_2.1_APT122_DiarioReflexionFase2.docx>) · [`Farias_Emanuel_2.1_APT122_DiarioReflexionFase2.docx`](<Fase 2/Individual/Farias_Emanuel_2.1_APT122_DiarioReflexionFase2.docx>) · [`Campos_Martin_2.1_APT122_DiarioReflexionFase2.docx`](<Fase 2/Individual/Campos_Martin_2.1_APT122_DiarioReflexionFase2.docx>) |
+| Autoevaluación Fase 2 | Individual | [`Fase 2/Individual/Autoevaluacion_Fase2_Camilo_Fuenzalida.docx`](<Fase 2/Individual/Autoevaluacion_Fase2_Camilo_Fuenzalida.docx>) · [`Fase 2/Individual/Autoevaluacion_Fase2_Emanuel_Farias.docx`](<Fase 2/Individual/Autoevaluacion_Fase2_Emanuel_Farias.docx>) · [`Fase 2/Individual/Autoevaluacion_Fase2_MartinCampos.docx`](<Fase 2/Individual/Autoevaluacion_Fase2_MartinCampos.docx>) |
+| 2.3 Informe de avance | Grupal | [`Fase 2/Grupal/2.3_APT122_InformeAvance_Fase2_K-Secure.docx`](<Fase 2/Grupal/2.3_APT122_InformeAvance_Fase2_K-Secure.docx>) |
+| 2.4 Desarrollo del proyecto | Grupal | [`Fase 2/Grupal/2.4_GuiaEstudiante_Fase2_DesarrolloProyecto_APT_COMPLETO.docx`](<Fase 2/Grupal/2.4_GuiaEstudiante_Fase2_DesarrolloProyecto_APT_COMPLETO.docx>) |
+| 2.6 Informe final | Grupal | [`Fase 2/Grupal/2.6_GuiaEstudiante_Fase2_InformeFinal_APT_COMPLETO.docx`](<Fase 2/Grupal/2.6_GuiaEstudiante_Fase2_InformeFinal_APT_COMPLETO.docx>) |
+| Presentación del proyecto | Grupal | [`Fase 2/Grupal/Presentacion_Proyecto_Fase2_K-Secure.pptx`](<Fase 2/Grupal/Presentacion_Proyecto_Fase2_K-Secure.pptx>) |
+| Documentación de la 2.ª entrega (01 a 05: catálogo de reglas, motor, ERS, casos de uso, SAD 4+1) | Grupal | [`Fase 2/Grupal/`](<Fase 2/Grupal/>) |
+
+#### Fase 3 · [`Fase 3/`](<Fase 3/>)
+
+Entrega final (01/12/2026): informe final, presentación y demostración. Pendiente.
 
 ---
 
@@ -202,14 +213,17 @@ flowchart LR
 ```
 Capstone/
 ├── README.md                  ← este archivo
+├── Fase 1/                    ← entregas de la Fase 1 (Grupal/ e Individual/)
+├── Fase 2/                    ← entregas de la Fase 2 y documentación 01 a 05 (ERS, SAD…)
+├── Fase 3/                    ← entrega final
 ├── docs/
 │   ├── 00_Documento_Inicio_Proyecto.md
 │   ├── agil/                  ← metodología y artefactos Scrum
 │   ├── diagramas/             ← modelo entidad-relación y diagramas UML
+│   ├── Requisitos_No_Funcionales.md
 │   ├── Matriz_de_Trazabilidad.md
 │   ├── Marco_de_Clasificacion_de_Datos.md
 │   ├── Plan_de_Pruebas.md
-│   ├── Requisitos_No_Funcionales.md
 │   ├── Manual_Tecnico.md
 │   └── Innovacion.md
 ├── render.yaml                ← despliegue en Render
@@ -231,8 +245,8 @@ Capstone/
 Documentación de arquitectura:
 
 - [`k-secure-web/docs/ARQUITECTURA.md`](k-secure-web/docs/ARQUITECTURA.md): decisiones de diseño y cómo se construyó.
-- `05 - Documento de Arquitectura de Software (SAD 4+1).docx`: vistas 4+1.
+- [`Fase 2/Grupal/05 - Documento de Arquitectura de Software (SAD 4+1).docx`](<Fase 2/Grupal/05 - Documento de Arquitectura de Software (SAD 4+1).docx>): vistas 4+1.
 - [`docs/diagramas/`](docs/diagramas/): modelo entidad-relación, diagramas de clases, secuencia y componentes.
 
-Documentación de requisitos: `03 - Especificación de Requerimientos de Software (ERS).docx` (incluye los requisitos
-no funcionales) y `04 - Especificación de Casos de Uso.docx`.
+Documentación de requisitos (en [`Fase 2/Grupal/`](<Fase 2/Grupal/>)): `03 - Especificación de Requerimientos de Software (ERS).docx`
+(incluye los requisitos no funcionales) y `04 - Especificación de Casos de Uso.docx`.
