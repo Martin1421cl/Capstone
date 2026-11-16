@@ -1,7 +1,7 @@
 # Plan de pruebas — K-Secure
 
 **Proyecto:** K-Secure · Capstone PTY4614-003 · Equipo 2
-**Versión del documento:** 1.0 · 31/10/2026
+**Versión del documento:** 1.1 · 16/11/2026 (agrega la sección 9: pruebas por sprint)
 **Responsables:** Camilo Fuenzalida, Emanuel Farías, Martín Campos
 
 ---
@@ -127,3 +127,39 @@ En un PC lento, los umbrales de rendimiento se pueden relajar con `KSECURE_FACTO
 | D-01 | RNF-08 | Una tabla mayor al límite de filas puede devolver filas distintas en cada escaneo (falta `ORDER BY`) | Media | Abierto (sprint 7) |
 | D-02 | Pruebas | `test_bd_servidor_inalcanzable_da_error_claro` falla si no está instalado `psycopg` | Baja | Se resuelve con `pip install -r requirements.txt` |
 | D-03 | Medición de capacidad | Un CSV de 100.000 filas usa ~2,2 GB de RAM al escanearse; supera los 512 MB del plan gratis de Render (ver [Requisitos no funcionales](Requisitos_No_Funcionales.md)) | Alta en la nube, baja con Docker | Abierto (HU-29, sprint 7) |
+
+## 9. Pruebas por sprint (evidencia)
+
+Las pruebas se escriben y ejecutan **en cada sprint**: una historia no se da por terminada si la suite completa no pasa
+([Definition of Done](agil/04_Definition_of_Done.md), punto 3). Esta tabla muestra cuántas pruebas había al cierre de
+cada sprint y su resultado. Los datos salen del historial del repositorio: se tomó el último commit de cada sprint y se
+ejecutó `pytest` en esa versión el 16/11/2026.
+
+| Sprint | Cierre | Commit | Pruebas | Resultado | Pruebas nuevas en el sprint |
+|---|---|---|---|---|---|
+| 3 | 28/09 | `d933f9b` | **16** | ✅ 16 pasan | Primera versión (carpeta `k-secure/`): RUT con Módulo 11 (12) y teléfono (4) |
+| 4 | 12/10 | `4505ad6` | **72** | ✅ 72 pasan | Reescritura: RUT (21) y validadores chilenos (51): teléfono, tarjeta con Luhn, correo, cuenta bancaria, patente y claves |
+| 5 | 26/10 | `ce88693` | **141** | ✅ 141 pasan | Preprocesadores de archivos (16), mantenedor de reglas (23), API web (16), base del cliente simulado (3) y más casos de validadores (+11) |
+| 6 | 09/11 | `122ae94` | **235** | ✅ 235 pasan | Sesión y roles (20), recuperación de contraseña (18), bitácora (13), exportación (7), revisión de hallazgos (7), cifrado (4), **integración** (4), **seguridad** (18) y **rendimiento** (3) |
+| 7 | en curso | — | 235 al 16/11 | ✅ | Se agregan con HU-27 (lectura determinista de tablas) y HU-29 (memoria con archivos grandes) |
+
+Cobertura por tipo de prueba al cierre del sprint 6:
+
+| Tipo | Archivos | Pruebas |
+|---|---|---|
+| Unitarias | `tests/test_*.py` (12 archivos) | 210 |
+| Integración | `tests/integracion/` | 4 |
+| Seguridad | `tests/seguridad/` | 18 |
+| Rendimiento | `tests/rendimiento/` | 3 |
+| **Total** | | **235** |
+
+Para reproducir cualquier fila (por ejemplo, la del sprint 5):
+
+```bash
+git checkout ce88693
+cd k-secure-web && pytest -q        # en el sprint 3 la carpeta es k-secure/
+git checkout main
+```
+
+Al cierre de cada sprint siguiente se agrega una fila a esta tabla con el commit y el resultado de `pytest`.
+
