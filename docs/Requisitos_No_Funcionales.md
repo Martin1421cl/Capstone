@@ -4,7 +4,7 @@ Complementa la sección de requisitos no funcionales (RNF-01 a RNF-12) de
 `03 - Especificación de Requerimientos de Software (ERS).docx` con los requisitos de **infraestructura**:
 qué servidor se necesita, qué hay que instalar y con qué se desarrolló.
 
-**Versión:** 1.0 · 31/10/2026 · Las cifras de memoria y tiempo se midieron en el entorno de desarrollo.
+**Versión:** 1.1 · 16/11/2026 (agrega la sección 6: escalabilidad) · Las cifras de memoria y tiempo se midieron en el entorno de desarrollo.
 
 ---
 
@@ -125,3 +125,33 @@ Resumen de los RNF de la ERS más los de infraestructura de este documento.
 | RNF-14 | Capacidad | Escanear un archivo de 100.000 filas sin superar 1 GB de RAM | Medido: ~2,2 GB (D-03) | ⏳ |
 | RNF-15 | Disponibilidad | La app informa su estado en `/api/health` (healthcheck de Docker y Render) | `docker compose ps` muestra `healthy` | ✅ |
 | RNF-16 | Seguridad | En producción, acceso solo por HTTPS; cookie de sesión `HttpOnly` y `Secure` | Render entrega HTTPS; revisión de `web/sesion.py` | ✅ |
+| RNF-17 | Escalabilidad | La app no guarda estado en memoria: puede correr en varias instancias contra la misma base PostgreSQL | Revisión del diseño (sección 6) | ✅ |
+| RNF-18 | Escalabilidad | Un escaneo largo no debe bloquear al resto de los usuarios | Hoy el escaneo de archivos subidos bloquea el servidor mientras dura (sección 6) | ⏳ |
+
+---
+
+## 6. Escalabilidad
+
+Cómo crece K-Secure cuando aumentan los usuarios, los escaneos o el tamaño de los datos.
+
+### Lo que el diseño ya permite
+
+| Aspecto | Diseño actual | Qué permite |
+|---|---|---|
+| **Estado de la aplicación** | Sesiones, cuentas, reglas, llaves de la bóveda y bitácora se guardan en la base de datos, no en la memoria del servidor | Correr **varias instancias** de la app detrás de un balanceador de carga, todas contra la misma base PostgreSQL, y reiniciar la app sin cerrar sesiones |
+| **Base de datos** | PostgreSQL (Neon en la nube o el contenedor `db` en Docker), con índices en `hallazgos.tipo`, `hallazgos.riesgo`, `hallazgos.revision` y `bitacora.fecha` | Filtros rápidos con miles de hallazgos; Neon permite subir de plan sin cambiar código |
+| **Tamaño de cada escaneo** | Límite de 100 MB por archivo y de 1.000, 10.000 o 100.000 filas por tabla | Un escaneo no puede consumir recursos sin límite |
+| **Nuevos tipos de dato** | Cada tipo es un validador independiente; las reglas se crean desde la pantalla | Crecer en cobertura sin tocar el motor |
+| **Despliegue** | Imagen Docker configurada por variables de entorno | Levantar más instancias en cualquier servidor u orquestador |
+
+> Para correr más de una instancia hay que usar **PostgreSQL**: SQLite es un archivo local y no se comparte entre
+> servidores.
+
+### Límites actuales
+
+| Límite | Efecto | Cómo se resuelve |
+|---|---|---|
+| El servidor arranca con **un solo proceso** de Uvicorn, y el escaneo de **archivos subidos** corre en su hilo principal | Mientras dura un escaneo grande, las demás peticiones esperan (el escaneo de bases de datos sí corre en un hilo aparte) | Corto plazo: `uvicorn --workers N` o varias instancias. Mejor solución: escanear en un hilo aparte o en segundo plano, con progreso en pantalla (RNF-18) |
+| Memoria al escanear archivos grandes (~2,2 GB para un CSV de 100.000 filas) | Limita el tamaño de archivo por instancia | HU-29: procesar y guardar los hallazgos por lotes (RNF-14) |
+| Plan gratis de Render: 512 MB de RAM y la app "duerme" tras 15 min | Pensado para la demo, no para uso en empresa | Plan pagado o instalación con Docker en un servidor propio |
+
