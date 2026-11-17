@@ -23,12 +23,13 @@ Dónde está cada documento que se revisa en el repositorio. Las rutas son relat
 | **Retrospectivas** | [`docs/agil/05_Retrospectivas.md`](docs/agil/05_Retrospectivas.md) |
 | **Especificación de requisitos (SRS / ERS)** | [`Fase 2/Grupal/03 - Especificación de Requerimientos de Software (ERS).docx`](<Fase 2/Grupal/03 - Especificación de Requerimientos de Software (ERS).docx>) · [`Fase 2/Grupal/04 - Especificación de Casos de Uso.docx`](<Fase 2/Grupal/04 - Especificación de Casos de Uso.docx>) · [`docs/Matriz_de_Trazabilidad.md`](docs/Matriz_de_Trazabilidad.md) (requisito → caso de uso → historia → código → prueba) |
 | **README del repositorio** | Este archivo · README técnico de la app en [`k-secure-web/README.md`](k-secure-web/README.md) |
+| **Documento de diseño** | [`docs/Documento_de_Diseno.md`](docs/Documento_de_Diseno.md) (arquitectura, componentes, comunicación entre servicios, modelo de datos, UML, diseño Docker y decisiones técnicas) |
 | **Arquitectura** | [`Fase 2/Grupal/05 - Documento de Arquitectura de Software (SAD 4+1).docx`](<Fase 2/Grupal/05 - Documento de Arquitectura de Software (SAD 4+1).docx>) · [`k-secure-web/docs/ARQUITECTURA.md`](k-secure-web/docs/ARQUITECTURA.md) · sección [Arquitectura](#arquitectura) de este README |
 | **Modelo de datos** | [`docs/diagramas/01_Modelo_Entidad_Relacion.md`](docs/diagramas/01_Modelo_Entidad_Relacion.md) · tablas en [`k-secure-web/ksecure/almacenamiento/modelos.py`](k-secure-web/ksecure/almacenamiento/modelos.py) · base demo en [`k-secure-web/demo/cliente_demo.sql`](k-secure-web/demo/cliente_demo.sql) |
 | **Diagramas UML** | Clases: [`docs/diagramas/02_UML_Diagrama_de_Clases.md`](docs/diagramas/02_UML_Diagrama_de_Clases.md) · Secuencia: [`docs/diagramas/03_UML_Diagrama_de_Secuencia.md`](docs/diagramas/03_UML_Diagrama_de_Secuencia.md) · Componentes y despliegue: [`docs/diagramas/04_UML_Diagrama_de_Componentes.md`](docs/diagramas/04_UML_Diagrama_de_Componentes.md) · Casos de uso: `04 - Especificación de Casos de Uso.docx` · Imágenes: [`docs/diagramas/img/`](docs/diagramas/img/) |
-| **Requisitos no funcionales** | [`docs/Requisitos_No_Funcionales.md`](docs/Requisitos_No_Funcionales.md) (servidor, software, entorno) · RNF-01 a RNF-12 en la ERS |
+| **Requisitos no funcionales** | [`docs/Requisitos_No_Funcionales.md`](docs/Requisitos_No_Funcionales.md) (seguridad, rendimiento, escalabilidad, disponibilidad, portabilidad, servidor y software) · RNF-01 a RNF-12 en la ERS |
 | **Docker** | [`k-secure-web/Dockerfile`](k-secure-web/Dockerfile) · [`k-secure-web/docker-compose.yml`](k-secure-web/docker-compose.yml) · [`k-secure-web/.env.example`](k-secure-web/.env.example) |
-| **Pruebas** | Plan: [`docs/Plan_de_Pruebas.md`](docs/Plan_de_Pruebas.md) · código: [`k-secure-web/tests/`](k-secure-web/tests/) (unitarias, [`integracion/`](k-secure-web/tests/integracion/), [`seguridad/`](k-secure-web/tests/seguridad/), [`rendimiento/`](k-secure-web/tests/rendimiento/)) |
+| **Pruebas** | Plan y evidencia por sprint: [`docs/Plan_de_Pruebas.md`](docs/Plan_de_Pruebas.md) · código: [`k-secure-web/tests/`](k-secure-web/tests/) (unitarias, [`integracion/`](k-secure-web/tests/integracion/), [`seguridad/`](k-secure-web/tests/seguridad/), [`rendimiento/`](k-secure-web/tests/rendimiento/)) |
 | **Manual técnico** | [`docs/Manual_Tecnico.md`](docs/Manual_Tecnico.md) |
 | **Innovación e impacto en el mercado** | [`docs/Innovacion.md`](docs/Innovacion.md) |
 | Marco de clasificación de datos (objetivo OE5) | [`docs/Marco_de_Clasificacion_de_Datos.md`](docs/Marco_de_Clasificacion_de_Datos.md) |
@@ -218,6 +219,7 @@ Capstone/
 ├── Fase 3/                    ← entrega final
 ├── docs/
 │   ├── 00_Documento_Inicio_Proyecto.md
+│   ├── Documento_de_Diseno.md
 │   ├── agil/                  ← metodología y artefactos Scrum
 │   ├── diagramas/             ← modelo entidad-relación y diagramas UML
 │   ├── Requisitos_No_Funcionales.md
