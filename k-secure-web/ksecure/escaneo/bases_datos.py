@@ -119,6 +119,18 @@ def _posicion(fila, clave: list[str], numero: int) -> str:
     return f"fila {numero}"
 
 
+def _consulta(tabla: Table, clave: list[str], max_filas: int, ordenar: bool = True):
+    """SELECT con orden fijo (HU-27 / RNF-08): el mismo escaneo lee siempre las mismas filas.
+
+    Se ordena por la llave primaria; si la tabla no tiene, por todas sus columnas.
+    Sin ORDER BY, una tabla más grande que el límite puede devolver filas distintas cada vez.
+    """
+    q = select(tabla)
+    if ordenar:
+        q = q.order_by(*(tabla.c[k] for k in clave) if clave else tabla.c)
+    return q.limit(max_filas)
+
+
 def escanear_bd(engine: Engine, descripcion: str, max_filas: int = 1000,
                 tablas: list[str] | None = None, validators: list[Validator] | None = None) -> ResultadoEscaneo:
     """Pasa cada celda por los validadores, usando el nombre de su columna como contexto."""
@@ -132,10 +144,26 @@ def escanear_bd(engine: Engine, descripcion: str, max_filas: int = 1000,
         try:
             tabla = Table(nombre, MetaData(), autoload_with=engine)
             clave = [c.name for c in tabla.primary_key.columns]
+            ordenar = True
             with engine.connect() as conn:
-                filas = conn.execute(select(tabla).limit(max_filas)).mappings()
-                escanear_filas(resultado, nombre,
-                               ((_posicion(f, clave, n), f) for n, f in enumerate(filas, start=1)), validators)
+                try:
+                    filas = conn.execute(_consulta(tabla, clave, max_filas)).mappings()
+                except Exception:
+                    # Algunos motores no ordenan ciertos tipos (ej. TEXT en SQL Server, CLOB en Oracle):
+                    # en una tabla sin llave primaria se lee sin orden y se avisa.
+                    if clave:
+                        raise
+                    ordenar = False
+                if ordenar:
+                    escanear_filas(resultado, nombre,
+                                   ((_posicion(f, clave, n), f) for n, f in enumerate(filas, start=1)), validators)
+            if not ordenar:
+                with engine.connect() as conn:  # conexión nueva: en PostgreSQL la anterior quedó abortada
+                    filas = conn.execute(_consulta(tabla, clave, max_filas, ordenar=False)).mappings()
+                    escanear_filas(resultado, nombre,
+                                   ((_posicion(f, clave, n), f) for n, f in enumerate(filas, start=1)), validators)
+                resultado.errores.append(f"{nombre}: sin llave primaria ordenable; "
+                                         "dos escaneos podrían leer filas distintas")
         except Exception as e:  # una tabla rara (permisos, tipos exóticos) no detiene el resto
             resultado.errores.append(f"{nombre}: {str(e).splitlines()[0][:200]}")
     return resultado
