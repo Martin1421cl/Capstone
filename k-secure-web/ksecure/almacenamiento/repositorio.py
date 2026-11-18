@@ -1,13 +1,14 @@
 """Consultas sobre la base interna: guardar escaneos y leer sus resultados."""
 
-from sqlalchemy import case, func, or_, select, update
+from sqlalchemy import case, delete, func, insert, or_, select, update
 from sqlalchemy.orm import Session
 
 from ksecure.almacenamiento import boveda
 from ksecure.almacenamiento.modelos import Escaneo, Hallazgo
 from ksecure.almacenamiento.usuarios import ahora
 from ksecure.core.models import RiskLevel
-from ksecure.escaneo.resultado import ResultadoEscaneo
+from ksecure.escaneo.resultado import ErrorAlGuardar, ResultadoEscaneo
+from ksecure.escaneo.resultado import Hallazgo as ResultadoHallazgo
 
 # De mayor a menor riesgo, para ordenar y para quedarse con el peor de una columna.
 ORDEN_RIESGO = [RiskLevel.RESTRINGIDO.value, RiskLevel.CONFIDENCIAL.value,
@@ -44,27 +45,67 @@ def _orden_sql(orden: str, invertir: bool) -> list:
     return claves + [Hallazgo.id]
 
 
+EN_CURSO = "en_curso"
+
+
+class Guardado:
+    """Guarda un escaneo por lotes mientras se hace (HU-29), en vez de juntar todos los hallazgos en memoria.
+
+    Cada lote se confirma por separado, así la base no queda bloqueada durante un escaneo largo (RNF-18).
+    Mientras dura, el escaneo queda "en curso" y no aparece en el historial; si algo falla, se borra entero.
+
+        guardado = Guardado(db, "archivo", "clientes.csv")
+        resultado = ResultadoEscaneo("archivo", "clientes.csv", al_lote=guardado.agregar)
+        ... escanear ...
+        escaneo = guardado.terminar(resultado)     # o guardado.cancelar() si falló
+    """
+
+    def __init__(self, db: Session, origen_tipo: str, origen_nombre: str):
+        self.db = db
+        self.fernet, llave_cifrada = boveda.nueva_llave_escaneo(db)
+        self.escaneo = Escaneo(origen_tipo=origen_tipo, origen_nombre=origen_nombre,
+                               filas_por_fuente={}, errores=[], llave_cifrada=llave_cifrada, estado=EN_CURSO)
+        db.add(self.escaneo)
+        db.commit()
+
+    def agregar(self, hallazgos: list[ResultadoHallazgo]):
+        """Inserta un lote sin crear objetos del ORM (eso era lo que más memoria usaba)."""
+        try:
+            self.db.execute(insert(Hallazgo), [self._fila(h) for h in hallazgos])
+            self.db.commit()
+        except Exception as e:
+            self.db.rollback()
+            raise ErrorAlGuardar(str(e).splitlines()[0][:200]) from e
+
+    def _fila(self, h: ResultadoHallazgo) -> dict:
+        m = h.match
+        return {
+            "escaneo_id": self.escaneo.id, "fuente": h.fuente, "columna": h.columna,
+            "posicion": h.posicion, "numero": h.numero, "tipo": m.type, "riesgo": m.risk_level.value,
+            "confianza": round(m.confidence), "nivel_confianza": m.confidence_level.value,
+            "contexto": ", ".join(m.context.positive_keywords), "valor_enmascarado": m.masked_text,
+            "valor_cifrado": self.fernet.encrypt(m.text.encode()),
+        }
+
+    def terminar(self, resultado: ResultadoEscaneo) -> Escaneo:
+        resultado.vaciar()
+        if resultado.hallazgos:  # un resultado sin al_lote: se guarda todo de una vez
+            self.agregar(resultado.hallazgos)
+        self.escaneo.filas_por_fuente = resultado.filas_por_fuente
+        self.escaneo.errores = resultado.errores
+        self.escaneo.estado = None
+        self.db.commit()
+        return self.escaneo
+
+    def cancelar(self):
+        self.db.rollback()
+        self.db.execute(delete(Escaneo).where(Escaneo.id == self.escaneo.id))
+        self.db.commit()
+
+
 def guardar(db: Session, resultado: ResultadoEscaneo) -> Escaneo:
-    fernet, llave_cifrada = boveda.nueva_llave_escaneo(db)
-    escaneo = Escaneo(
-        origen_tipo=resultado.origen_tipo, origen_nombre=resultado.origen_nombre,
-        filas_por_fuente=resultado.filas_por_fuente, errores=resultado.errores,
-        llave_cifrada=llave_cifrada,
-    )
-    escaneo.hallazgos = [
-        Hallazgo(
-            fuente=h.fuente, columna=h.columna, posicion=h.posicion, numero=h.numero,
-            tipo=h.match.type, riesgo=h.match.risk_level.value,
-            confianza=round(h.match.confidence), nivel_confianza=h.match.confidence_level.value,
-            contexto=", ".join(h.match.context.positive_keywords),
-            valor_enmascarado=h.match.masked_text,
-            valor_cifrado=fernet.encrypt(h.match.text.encode()),
-        )
-        for h in resultado.hallazgos
-    ]
-    db.add(escaneo)
-    db.commit()
-    return escaneo
+    """Guarda un escaneo que ya terminó (todos sus hallazgos están en `resultado.hallazgos`)."""
+    return Guardado(db, resultado.origen_tipo, resultado.origen_nombre).terminar(resultado)
 
 
 def _conteo_por_riesgo(db: Session, escaneo_id: int) -> dict[str, int]:
@@ -84,7 +125,7 @@ def _resumen(db: Session, e: Escaneo) -> dict:
 
 
 def listar(db: Session) -> list[dict]:
-    escaneos = db.scalars(select(Escaneo).order_by(Escaneo.fecha.desc())).all()
+    escaneos = db.scalars(select(Escaneo).where(Escaneo.estado.is_(None)).order_by(Escaneo.fecha.desc())).all()
     return [_resumen(db, e) for e in escaneos]
 
 
@@ -130,7 +171,8 @@ def detalle(db: Session, escaneo_id: int) -> dict | None:
         "por_tipo": por_tipo,
         "revision": {PENDIENTE: revision.get(None, 0), CONFIRMADO: revision.get(CONFIRMADO, 0),
                      FALSO_POSITIVO: revision.get(FALSO_POSITIVO, 0)},
-        "fuentes": len(e.filas_por_fuente) or len({h.fuente for h in e.hallazgos}),
+        "fuentes": len(e.filas_por_fuente) or db.scalar(  # sin cargar los hallazgos en memoria
+            select(func.count(func.distinct(Hallazgo.fuente))).where(Hallazgo.escaneo_id == e.id)),
         "filas_revisadas": sum(e.filas_por_fuente.values()),
         "columnas": columnas_sensibles(db, e),
         "errores": e.errores,
@@ -266,3 +308,4 @@ def revelar(db: Session, hallazgo_id: int, clave: str) -> str | None:
     if h is None:
         return None
     return boveda.revelar(db, clave, h.escaneo.llave_cifrada, h.valor_cifrado)
+

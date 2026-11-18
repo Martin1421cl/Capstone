@@ -32,6 +32,9 @@ class Escaneo(Base):
     errores: Mapped[list] = mapped_column(type_=JSON, default=list)
     # Llave con la que se cifraron los originales de este escaneo, cifrada a su vez con la llave pública.
     llave_cifrada: Mapped[bytes] = mapped_column(LargeBinary)
+    # HU-29: "en_curso" mientras se guardan sus hallazgos por lotes; vacío cuando terminó.
+    # Un escaneo en curso no aparece en el historial.
+    estado: Mapped[str | None] = mapped_column(String(20))
 
     hallazgos: Mapped[list["Hallazgo"]] = relationship(
         back_populates="escaneo", cascade="all, delete-orphan", passive_deletes=True)

@@ -12,7 +12,7 @@ from sqlalchemy import MetaData, Table, create_engine, event, inspect, select
 from sqlalchemy.engine import URL, Engine
 
 from ksecure.escaneo.celdas import escanear_filas
-from ksecure.escaneo.resultado import ResultadoEscaneo
+from ksecure.escaneo.resultado import ErrorAlGuardar, ResultadoEscaneo
 from ksecure.validators import default_validators
 from ksecure.validators.base import Validator
 
@@ -132,9 +132,13 @@ def _consulta(tabla: Table, clave: list[str], max_filas: int, ordenar: bool = Tr
 
 
 def escanear_bd(engine: Engine, descripcion: str, max_filas: int = 1000,
-                tablas: list[str] | None = None, validators: list[Validator] | None = None) -> ResultadoEscaneo:
-    """Pasa cada celda por los validadores, usando el nombre de su columna como contexto."""
-    resultado = ResultadoEscaneo("bd", descripcion)
+                tablas: list[str] | None = None, validators: list[Validator] | None = None,
+                resultado: ResultadoEscaneo | None = None) -> ResultadoEscaneo:
+    """Pasa cada celda por los validadores, usando el nombre de su columna como contexto.
+
+    resultado: uno ya creado con `al_lote` para guardar los hallazgos por lotes (HU-29).
+    """
+    resultado = resultado or ResultadoEscaneo("bd", descripcion)
     validators = validators if validators is not None else default_validators()
     disponibles = listar_tablas(engine)
     for nombre in tablas or disponibles:
@@ -164,6 +168,9 @@ def escanear_bd(engine: Engine, descripcion: str, max_filas: int = 1000,
                                    ((_posicion(f, clave, n), f) for n, f in enumerate(filas, start=1)), validators)
                 resultado.errores.append(f"{nombre}: sin llave primaria ordenable; "
                                          "dos escaneos podrían leer filas distintas")
+        except ErrorAlGuardar:
+            raise
         except Exception as e:  # una tabla rara (permisos, tipos exóticos) no detiene el resto
             resultado.errores.append(f"{nombre}: {str(e).splitlines()[0][:200]}")
+    resultado.vaciar()
     return resultado

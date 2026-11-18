@@ -8,10 +8,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from ksecure.almacenamiento import reglas, repositorio
-from ksecure.escaneo.archivos import escanear_archivos
+from ksecure.almacenamiento import reglas
+from ksecure.almacenamiento.repositorio import Guardado
+from ksecure.escaneo.archivos import escanear_archivos, titulo_de
 from ksecure.escaneo.bases_datos import (MOTORES, PUERTOS, ConexionError, DatosConexion, conectar,
                                          escanear_bd, listar_tablas)
+from ksecure.escaneo.resultado import ResultadoEscaneo
 from ksecure.web.api.dependencias import AUDITOR_O_MAS, exigir_boveda, get_db
 from ksecure.web.sesion import anotar
 
@@ -24,6 +26,23 @@ def _hallazgos(n: int) -> str:
     return "1 hallazgo" if n == 1 else f"{n:,} hallazgos".replace(",", ".")
 
 
+def _escanear_y_guardar(db: Session, origen_tipo: str, origen_nombre: str, escanear) -> ResultadoEscaneo:
+    """Escanea guardando los hallazgos por lotes (HU-29). Si algo falla, no queda un escaneo a medias."""
+    guardado = Guardado(db, origen_tipo, origen_nombre)
+    resultado = ResultadoEscaneo(origen_tipo, origen_nombre, al_lote=guardado.agregar)
+    try:
+        escanear(resultado)
+        guardado.terminar(resultado)
+    except BaseException:
+        try:
+            guardado.cancelar()
+        except Exception:  # noqa: S110 - que no tape el error original
+            pass
+        raise
+    resultado.escaneo_id = guardado.escaneo.id
+    return resultado
+
+
 @router.post("/archivos", dependencies=[AUDITOR_O_MAS])
 async def escanear_subidos(archivos: list[UploadFile], request: Request, db: Session = Depends(get_db)):
     """Escanea documentos (docx, pdf, xlsx, csv, txt...) y bases SQLite (.db) en un solo escaneo."""
@@ -32,19 +51,24 @@ async def escanear_subidos(archivos: list[UploadFile], request: Request, db: Ses
         en_disco = []
         for i, archivo in enumerate(archivos):
             nombre = os.path.basename(archivo.filename or "archivo")
-            datos = await archivo.read(MAX_ARCHIVO + 1)
-            if len(datos) > MAX_ARCHIVO:
-                raise HTTPException(413, f"{nombre} supera los 100 MB")
             # Del nombre del usuario solo se usa la extensión: nunca decide la ruta.
             ruta = Path(carpeta) / f"{i}{Path(nombre).suffix.lower()}"
-            ruta.write_bytes(datos)
+            tamano = 0
+            with open(ruta, "wb") as destino:  # de a 1 MB: el archivo nunca está entero en memoria (HU-29)
+                while trozo := await archivo.read(1024 * 1024):
+                    tamano += len(trozo)
+                    if tamano > MAX_ARCHIVO:
+                        raise HTTPException(413, f"{nombre} supera los 100 MB")
+                    destino.write(trozo)
             en_disco.append((str(ruta), nombre))
-        resultado = escanear_archivos(en_disco, reglas.validadores_activos(db))
-    escaneo = repositorio.guardar(db, resultado)
+        validadores = reglas.validadores_activos(db)
+        resultado = _escanear_y_guardar(db, "archivo", titulo_de([n for _, n in en_disco]),
+                                        lambda r: escanear_archivos(en_disco, validadores, r))
     nombres = ", ".join(n for _, n in en_disco)
     anotar(request, db, "escaneo_archivos",
-           f"{nombres} · {_hallazgos(len(resultado.hallazgos))} (escaneo #{escaneo.id})", escaneo_id=escaneo.id)
-    return {"escaneo_id": escaneo.id}
+           f"{nombres} · {_hallazgos(resultado.total)} (escaneo #{resultado.escaneo_id})",
+           escaneo_id=resultado.escaneo_id)
+    return {"escaneo_id": resultado.escaneo_id}
 
 
 class Conexion(BaseModel):
@@ -93,12 +117,14 @@ def escanear_base(pedido: PedidoEscaneoBD, request: Request, db: Session = Depen
     engine = _conectar(pedido.conexion)
     try:
         descripcion = DatosConexion(**pedido.conexion.model_dump()).descripcion()
-        resultado = escanear_bd(engine, descripcion, pedido.max_filas, pedido.tablas, reglas.validadores_activos(db))
+        validadores = reglas.validadores_activos(db)
+        resultado = _escanear_y_guardar(
+            db, "bd", descripcion,
+            lambda r: escanear_bd(engine, descripcion, pedido.max_filas, pedido.tablas, validadores, r))
     finally:
         engine.dispose()
-    escaneo = repositorio.guardar(db, resultado)
     tablas = len(resultado.filas_por_fuente)
     anotar(request, db, "escaneo_bd",  # la descripción no lleva la contraseña de la base
            f"{descripcion} · {tablas} {'tabla' if tablas == 1 else 'tablas'} · "
-           f"{_hallazgos(len(resultado.hallazgos))} (escaneo #{escaneo.id})", escaneo_id=escaneo.id)
-    return {"escaneo_id": escaneo.id}
+           f"{_hallazgos(resultado.total)} (escaneo #{resultado.escaneo_id})", escaneo_id=resultado.escaneo_id)
+    return {"escaneo_id": resultado.escaneo_id}

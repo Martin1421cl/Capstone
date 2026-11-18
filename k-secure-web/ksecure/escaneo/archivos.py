@@ -22,7 +22,7 @@ EXTENSIONES_SQLITE = {".db", ".sqlite", ".sqlite3"}
 def _escanear_texto(texto: str, fuente: str, resultado: ResultadoEscaneo, validators: list[Validator]):
     for v in validators:
         for m in v.validate_content(texto, fuente):
-            resultado.hallazgos.append(Hallazgo(m, fuente, f"línea {m.line_number}", numero=m.line_number))
+            resultado.agregar(Hallazgo(m, fuente, f"línea {m.line_number}", numero=m.line_number))
 
 
 def _escanear_documento(ruta: str, nombre: str, resultado: ResultadoEscaneo, validators: list[Validator]):
@@ -62,20 +62,24 @@ def _escanear_sqlite(ruta: str, nombre: str, resultado: ResultadoEscaneo, valida
         engine.dispose()  # en Windows el archivo queda bloqueado si no se cierra
     for h in parcial.hallazgos:
         h.fuente = f"{nombre} › {h.fuente}"
-    resultado.hallazgos += parcial.hallazgos
+        resultado.agregar(h)
     resultado.filas_por_fuente.update({f"{nombre} › {t}": n for t, n in parcial.filas_por_fuente.items()})
     resultado.errores += [f"{nombre}: {e}" for e in parcial.errores]
 
 
-def escanear_archivos(archivos: list[tuple[str, str]], validators: list[Validator] | None = None) -> ResultadoEscaneo:
+def titulo_de(nombres: list[str]) -> str:
+    return nombres[0] if len(nombres) == 1 else f"{len(nombres)} archivos"
+
+
+def escanear_archivos(archivos: list[tuple[str, str]], validators: list[Validator] | None = None,
+                      resultado: ResultadoEscaneo | None = None) -> ResultadoEscaneo:
     """archivos: pares (ruta en disco, nombre original). Todos quedan en un mismo escaneo.
 
     validators: los activos según el mantenedor de reglas; si no se indican, los incluidos.
+    resultado: uno ya creado con `al_lote` para guardar los hallazgos por lotes (HU-29).
     """
     validators = validators if validators is not None else default_validators()
-    nombres = [n for _, n in archivos]
-    titulo = nombres[0] if len(nombres) == 1 else f"{len(nombres)} archivos"
-    resultado = ResultadoEscaneo("archivo", titulo)
+    resultado = resultado or ResultadoEscaneo("archivo", titulo_de([n for _, n in archivos]))
     for ruta, nombre in archivos:
         ext = Path(nombre).suffix.lower()
         if ext in EXTENSIONES_SQLITE:
@@ -84,4 +88,5 @@ def escanear_archivos(archivos: list[tuple[str, str]], validators: list[Validato
             _escanear_planilla(ruta, nombre, resultado, validators)
         else:
             _escanear_documento(ruta, nombre, resultado, validators)
+    resultado.vaciar()
     return resultado
