@@ -2,7 +2,7 @@
 import { RIESGOS } from "./api.js";
 import { el, formatoFecha, icono } from "./ui.js";
 
-export function tarjetaEscaneo(e, { alBorrar } = {}) {
+export function tarjetaEscaneo(e, { alBorrar, anterior } = {}) {
   const barras = el("div", { class: "mini-barras", "aria-hidden": "true" },
     RIESGOS.map((r) => el("span", {
       class: `risk-${r.id}`,
@@ -15,7 +15,10 @@ export function tarjetaEscaneo(e, { alBorrar } = {}) {
     el("div", {},
       el("h3", {}, el("a", { href: `/resultados.html?id=${e.id}` }, e.origen_nombre)),
       el("div", { class: "meta" }, `${formatoFecha(e.fecha)} · ${resumen.join(" · ") || "sin hallazgos"}`),
-      el("div", { style: "margin-top:10px;max-width:420px" }, barras)),
+      el("div", { style: "margin-top:10px;max-width:420px" }, barras),
+      // HU-17: si hay un escaneo anterior de la misma fuente, se puede ver qué cambió.
+      anterior && el("a", { class: "comparar", href: `/comparar.html?a=${anterior.id}&b=${e.id}` },
+        "Comparar con el escaneo anterior", icono("flecha"))),
     el("div", { style: "display:flex;gap:14px;align-items:center" },
       el("div", { class: "total" }, String(e.total), el("small", {}, "hallazgos")),
       alBorrar && el("button", {

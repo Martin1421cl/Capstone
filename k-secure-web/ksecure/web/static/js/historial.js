@@ -17,7 +17,10 @@ function vacio() {
 async function cargar() {
   const escaneos = await api("/escaneos");
   lista.replaceChildren(...(escaneos.length
-    ? escaneos.map((e) => tarjetaEscaneo(e, !puede("Auditor") ? {} : {
+    ? escaneos.map((e, i) => tarjetaEscaneo(e, {
+      // La lista viene del más reciente al más antiguo: el anterior de la misma fuente está más abajo.
+      anterior: escaneos.slice(i + 1).find((o) => o.origen_nombre === e.origen_nombre && o.origen_tipo === e.origen_tipo),
+      ...(!puede("Auditor") ? {} : {
       alBorrar: async () => {
         const ok = await confirmar({
           titulo: "¿Borrar este escaneo?",
@@ -35,7 +38,7 @@ async function cargar() {
         }
         cargar();
       },
-    }))
+    }) }))
     : [vacio()]));
 }
 

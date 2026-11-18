@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Comparar escaneos · K-Secure</title>
+  <link rel="icon" href="/img/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/css/ksecure.css">
+</head>
+<body data-pagina="historial">
+  <header id="site-header" class="site-header"></header>
+
+  <main class="container">
+    <div class="section-title entrar">
+      <div>
+        <p class="muted" style="margin:0"><a href="/historial.html">Historial</a> › Comparar</p>
+        <h1 style="margin:0">Comparar escaneos</h1>
+      </div>
+    </div>
+    <p class="muted entrar">Qué datos sensibles aumentaron o disminuyeron entre dos escaneos de la misma fuente.
+      Todo se muestra enmascarado.</p>
+
+    <form class="filtros card entrar form-comparar" id="elegir" style="margin-top:20px">
+      <label style="margin:0">Anterior <select name="a" id="sel-a" required></select></label>
+      <label style="margin:0">Actual <select name="b" id="sel-b" required></select></label>
+      <button class="btn btn-primary" type="submit">Comparar</button>
+    </form>
+
+    <div id="resultado"></div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+  <script type="module" src="/js/comparar.js"></script>
+</body>
+</html>
