@@ -21,8 +21,8 @@ las divide en tareas y se las reparte. Las fechas y el avance se respaldan con e
 | 3 | 15/09 – 28/09 | Fase 2 | Primera versión: escritorio con FastAPI + HTML local | — (versión descartada) | — |
 | 4 | 29/09 – 12/10 | Fase 2 | Incorporar la retroalimentación del docente y empezar la reescritura | 5 | 5 |
 | 5 | 13/10 – 26/10 | Fase 2 | Reescritura completa como aplicación web, publicada en la nube | 80 | 80 |
-| 6 | 27/10 – 09/11 | Fase 2 → 3 | Cuentas y seguridad, reportes, Docker, pruebas y documentación | 41 | 30 (en curso) |
-| 7 | 10/11 – 23/11 | Fase 3 | Cierre: pendientes, pruebas finales y presentación | 15 | — |
+| 6 | 27/10 – 09/11 | Fase 2 → 3 | Cuentas y seguridad, reportes, Docker, pruebas y documentación | 41 | 41 |
+| 7 | 10/11 – 23/11 | Fase 3 | Cierre: pendientes, pruebas finales y presentación | 15 | 15 al 18/11 (en curso) |
 | — | 24/11 – 01/12 | Fase 3 | Entrega final (01/12/2026): informe, presentación y demostración | — | — |
 
 > En los sprints 1 a 3 el trabajo fue de definición del proyecto y de una primera versión que luego se descartó,
@@ -94,7 +94,7 @@ las divide en tareas y se las reparte. Las fechas y el avance se respaldan con e
 | — | Vista por tipo de dato y cliente simulado (26/10) | EF | — | ✅ |
 | | | **Total** | **80** | |
 
-## Sprint 6 — Cuentas, seguridad y entrega (27/10 – 09/11) · *sprint actual*
+## Sprint 6 — Cuentas, seguridad y entrega (27/10 – 09/11) · *cerrado*
 
 **Objetivo:** cerrar los requisitos de seguridad pendientes y dejar el proyecto listo para instalar, probar y evaluar.
 
@@ -105,23 +105,29 @@ las divide en tareas y se las reparte. Las fechas y el avance se respaldan con e
 | HU-23 | Bitácora de auditoría (28/10) | EF | 5 | ✅ |
 | HU-15, HU-16 | Exportar CSV/JSON/PDF y revisión de hallazgos (28/10) | EF | 10 | ✅ |
 | — | Documentos de la Fase 2 (2.1, 2.3, 2.4, 2.6) y autoevaluaciones (30/10) | MC | — | ✅ |
-| HU-25 | Dockerfile, docker-compose y `.env.example` | CF | 3 | 🔄 |
-| HU-26 | Plan de pruebas y pruebas de integración, seguridad y rendimiento | CF, EF | 5 | 🔄 |
-| HU-28 | Manual técnico | MC | 3 | 🔄 |
-| — | README en la raíz, artefactos ágiles, modelo ER y diagramas UML | MC, CF | — | 🔄 |
+| HU-25 | Dockerfile, docker-compose y `.env.example`, probado con Docker Desktop (05/11 – 06/11) | CF | 3 | ✅ |
+| HU-26 | Plan de pruebas y pruebas de integración, seguridad y rendimiento (05/11 – 06/11) | CF, EF | 5 | ✅ |
+| HU-28 | Manual técnico (06/11) | CF | 3 | ✅ |
+| — | README en la raíz, artefactos ágiles, modelo ER y diagramas UML (06/11) | MC, CF | — | ✅ |
+| — | Marco de clasificación de datos (OE5) y entregas ordenadas por fase (05/11 – 06/11) | EF | — | ✅ |
 | | | **Total** | **41** | |
 
-## Sprint 7 — Cierre (10/11 – 23/11) · *planificado*
+## Sprint 7 — Cierre (10/11 – 23/11) · *sprint actual*
 
 **Objetivo:** terminar los pendientes y preparar la presentación final.
 
 | Historia | Tareas | Responsable | Pts | Estado |
 |---|---|---|---|---|
 | HU-27 | `ORDER BY` por llave primaria al leer tablas, con 5 pruebas nuevas (17/11) | MC | 2 | ✅ |
-| HU-17 | Comparar dos escaneos de la misma fuente | EF | 8 | ⏳ |
-| HU-29 | Escaneo de archivos grandes por lotes (menos memoria) | CF | 5 | ⏳ |
+| HU-29 | Guardar los hallazgos por lotes: un CSV de 100.000 filas baja de ~2,1 GB a ~265 MB de RAM, con 7 pruebas (18/11) | CF | 5 | ✅ |
+| HU-17 | Comparar dos escaneos: API, página `comparar.html` y enlace desde el historial, con 9 pruebas (18/11) | EF | 8 | ✅ |
+| — | RNF-18: el escaneo de archivos corre en un hilo aparte y no bloquea a los demás usuarios (18/11) | EF | — | ✅ |
+| — | Documento de diseño, escalabilidad y pruebas por sprint (16/11) | MC, EF | — | ✅ |
+| — | Retrospectiva del sprint 6 (18/11) | MC | — | ✅ |
 | — | Prueba con la base del cliente simulado en Neon | EF | — | ⏳ |
 | — | Informe final, presentación y ensayo | Todo el equipo | — | ⏳ |
+| — | Pruebas de aceptación con un usuario externo (PR-24 a PR-26) | Todo el equipo | — | ⏳ |
+| — | Retrospectiva del sprint 7 (23/11) | Todo el equipo | — | ⏳ |
 
 ---
 
@@ -189,6 +195,35 @@ usuarios de GitHub de cada integrante (Fruna1, Emanuel2234, Martin1421cl) aparec
 | 28/10 | EF | `691127d` K-Secure: bitácora, página Seguridad, exportar resultados y revisión de hallazgos | HU-15, HU-16, HU-23 |
 | 30/10 | MC | `3301956` Delete Entrega 2 Documentacion directory | Entrega Fase 2 |
 | 30/10 | MC | `74861c6` Add files via upload | Entrega Fase 2 |
+| 05/11 | EF | `40b3cc8` Diario 2.1 y entregas Fase 1 con el formato de nombre pedido | Entregas Fase 1 y 2 |
+| 05/11 | EF | `4070e80` ERS: login, recuperación, exportación, revisión y bitácora implementados | Documentación |
+| 05/11 | EF | `cddab00` Plan de pruebas, requisitos no funcionales y pruebas de integración y seguridad | HU-26 |
+| 05/11 | EF | `8a58a9e` Marco de clasificación de datos (OE5) | Documentación (OE5) |
+| 06/11 | MC | `c12c65b` Diario 2.1 individual y entregas Fase 1 con el formato de nombre pedido | Entregas Fase 1 y 2 |
+| 06/11 | MC | `10458e5` Presentación del proyecto Fase 1 | Entrega Fase 1 |
+| 06/11 | MC | `7510fde` Presentación del proyecto Fase 2 | Entrega Fase 2 |
+| 06/11 | MC | `fcd35bd` Documento de inicio, metodología Scrum, artefactos ágiles, trazabilidad e innovación | Documentación |
+| 06/11 | MC | `c50d9de` README con índice de evidencias | Documentación |
+| 06/11 | CF | `5bc45d6` Diario 2.1 y entregas Fase 1 con el formato de nombre pedido | Entregas Fase 1 y 2 |
+| 06/11 | CF | `eec08e9` Docker (app + PostgreSQL + cliente demo) y pruebas de rendimiento | HU-25, HU-26 |
+| 06/11 | CF | `ef45ec3` Modelo entidad-relación, diagramas UML, manual técnico y .mailmap | HU-28, documentación |
+| 06/11 | EF | `7c4c7d1` Organizar entregas de la Fase 1 en la carpeta Fase 1 | Entregas por fase |
+| 06/11 | EF | `a3552a6` Organizar entregas de la Fase 2 en la carpeta Fase 2 | Entregas por fase |
+| 06/11 | EF | `122ae94` Marco de clasificación: plan de alineación con la política de Duoc UC | Documentación (OE5) |
+
+### Sprint 7 (10/11 – 23/11) · en curso
+
+| Fecha | Integrante | Commit | Historia / aporte |
+|---|---|---|---|
+| 13/11 | MC | `7f7cd2a` README e índice de evidencias con la estructura por fases | Documentación |
+| 16/11 | EF | `83294d1` Plan de pruebas: evidencia de pruebas por sprint | HU-26 |
+| 16/11 | MC | `21ce3a3` Documento de diseño: arquitectura, comunicación entre servicios, Docker y decisiones técnicas | Documentación |
+| 16/11 | MC | `b2ccc6f` Requisitos no funcionales: escalabilidad | RNF-17, RNF-18 |
+| 18/11 | MC | `4c9defe` HU-27: lectura determinista de tablas (ORDER BY por llave primaria) y sus pruebas | HU-27 |
+| 18/11 | MC | `abff88e` Documentación: HU-27 terminada (RNF-08 cumplido, 240 pruebas) | HU-27 |
+
+> Los commits que siguen a `abff88e` (arreglo de HU-27, retrospectiva del sprint 6, HU-29, RNF-18 y HU-17) se
+> agregan a esta tabla al cierre del sprint (23/11), junto con la retrospectiva del sprint 7.
 
 ### Commits por sprint e integrante
 
@@ -198,8 +233,9 @@ usuarios de GitHub de cada integrante (Fruna1, Emanuel2234, Martin1421cl) aparec
 | 3 | 0 | 1 | 0 | 1 |
 | 4 | 3 | 1 | 0 | 4 |
 | 5 | 20 | 2 | 0 | 22 |
-| 6 | 0 | 3 | 2 | 5 |
-| **Total** | **23** | **7** | **4** | **34** |
+| 6 | 3 | 10 | 7 | 20 |
+| 7 (hasta `abff88e`) | 0 | 1 | 5 | 6 |
+| **Total** | **26** | **15** | **14** | **55** |
 
 > Varias entregas se subieron desde la web de GitHub (*Add files via upload*) y la primera versión se subió en
 > bloque, por eso hay sprints con pocos commits. Desde el sprint 6 el equipo acordó hacer commits por tarea terminada

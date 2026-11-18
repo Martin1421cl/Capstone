@@ -74,5 +74,5 @@
 |---|---|---|
 | Columnas sensibles detectadas en la base demo | 100 % sin falsos positivos | 9 de 9, 0 falsos positivos (RNF-07) |
 | Tiempo de escaneo de 100.000 filas | ≤ 60 s | 32 s (RNF-06) |
-| Pruebas automáticas que pasan | 100 % | 240 de 240 |
+| Pruebas automáticas que pasan | 100 % | 257 de 257 |
 | Datos originales guardados en claro | 0 | 0 (RNF-02) |

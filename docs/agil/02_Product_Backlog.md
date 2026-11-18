@@ -43,7 +43,7 @@ y su caso de uso (`04 - Especificación de Casos de Uso.docx`).
 | HU-14 | E4 | Como **auditor**, quiero un historial de escaneos y poder borrar uno, para mantener ordenada la información. | Lista con fecha y origen; borrar elimina sus hallazgos. | RF-09 | S | 2 | 5 | ✅ |
 | HU-15 | E4 | Como **auditor**, quiero exportar los resultados a CSV, JSON y PDF, para entregarlos al DLP o a jefatura. | Siempre enmascarados; respetan los filtros; quedan en la bitácora; CSV sin fórmulas. | RF-15 | M | 5 | 6 | ✅ |
 | HU-16 | E4 | Como **auditor**, quiero marcar hallazgos como confirmados o falsos positivos con un motivo, para depurar el resultado. | Marca uno a uno o por filtro; exportar sin falsos positivos. | RF-16 | S | 5 | 6 | ✅ |
-| HU-17 | E4 | Como **auditor**, quiero comparar dos escaneos de la misma fuente, para ver si los datos sensibles aumentaron o disminuyeron. | Diferencias por tipo y riesgo entre dos fechas. | RF-18 | C | 8 | 7 | ⏳ |
+| HU-17 | E4 | Como **auditor**, quiero comparar dos escaneos de la misma fuente, para ver si los datos sensibles aumentaron o disminuyeron. | Diferencias por tipo y riesgo entre dos fechas. | RF-18 | C | 8 | 7 |✅ |
 | HU-18 | E5 | Como **administrador**, quiero crear reglas nuevas escribiendo ejemplos del dato, sin saber expresiones regulares. | Asistente de 3 pasos; "FC-123456" → patrón; prueba en vivo antes de guardar. | RF-10 | S | 8 | 5 | ✅ |
 | HU-19 | E5 | Como **administrador**, quiero apagar validadores incluidos o sumarles palabras de contexto, para adaptarlos a mi empresa. | Se aplica en el siguiente escaneo. | RF-11 | S | 3 | 5 | ✅ |
 | HU-20 | E6 | Como **empresa**, quiero que solo personas autorizadas entren a K-Secure, sin registro público. | Cuentas creadas por el admin; contraseña temporal que se cambia al primer ingreso. | RF-12, RF-13 | M | 5 | 6 | ✅ |
@@ -51,11 +51,11 @@ y su caso de uso (`04 - Especificación de Casos de Uso.docx`).
 | HU-22 | E6 | Como **usuario**, quiero recuperar mi contraseña con un código al correo, para no depender del administrador. | Código de 6 dígitos, vence en 10 minutos, se anula tras 5 intentos. | RF-14 | S | 5 | 6 | ✅ |
 | HU-23 | E6 | Como **administrador**, quiero una bitácora de quién hizo qué y cuándo, para auditar el uso. | Registra ingresos, escaneos, originales vistos y cambios de reglas; no se edita ni se borra; sin datos originales. | RF-17, RNF-12 | S | 5 | 6 | ✅ |
 | HU-24 | E7 | Como **cliente**, quiero usar K-Secure sin instalar ni configurar nada, porque no voy a tocar código. | Publicado en la nube (Render + Neon) con URL y login. | RNF-10 | M | 5 | 5 | ✅ |
-| HU-25 | E7 | Como **equipo de TI**, quiero levantar K-Secure con Docker, para instalarlo en un servidor propio. | `docker compose up` levanta app + PostgreSQL; `.env.example` documentado. | RNF-10 | S | 3 | 6 | 🔄 |
-| HU-26 | E7 | Como **equipo**, queremos pruebas de integración, seguridad y rendimiento, para asegurar la calidad antes de entregar. | Plan de pruebas documentado; pruebas automáticas que pasan. | RNF-11 | M | 5 | 6 | 🔄 |
+| HU-25 | E7 | Como **equipo de TI**, quiero levantar K-Secure con Docker, para instalarlo en un servidor propio. | `docker compose up` levanta app + PostgreSQL; `.env.example` documentado. | RNF-10 | S | 3 | 6 |✅ |
+| HU-26 | E7 | Como **equipo**, queremos pruebas de integración, seguridad y rendimiento, para asegurar la calidad antes de entregar. | Plan de pruebas documentado; pruebas automáticas que pasan. | RNF-11 | M | 5 | 6 |✅ |
 | HU-27 | E7 | Como **auditor**, quiero que el mismo escaneo repetido dé el mismo resultado, para comparar en el tiempo. | Lectura de tablas con `ORDER BY` por llave primaria. | RNF-08 | S | 2 | 7 | ✅ |
-| HU-28 | E7 | Como **equipo de TI del cliente**, quiero un manual técnico, para instalar y operar K-Secure. | Instalación local, Docker y nube; variables de entorno; solución de problemas. | — | S | 3 | 6 | 🔄 |
-| HU-29 | E7 | Como **auditor**, quiero escanear archivos de 100.000 filas sin que el servidor se quede sin memoria, para usar K-Secure en el plan de nube disponible. | Archivo de 100.000 filas con menos de 1 GB de RAM (hoy ~2,2 GB); procesar y guardar los hallazgos por lotes. | RNF-14 | S | 5 | 7 | ⏳ |
+| HU-28 | E7 | Como **equipo de TI del cliente**, quiero un manual técnico, para instalar y operar K-Secure. | Instalación local, Docker y nube; variables de entorno; solución de problemas. | — | S | 3 | 6 |✅ |
+| HU-29 | E7 | Como **auditor**, quiero escanear archivos de 100.000 filas sin que el servidor se quede sin memoria, para usar K-Secure en el plan de nube disponible. | Archivo de 100.000 filas con menos de 1 GB de RAM (antes ~2,2 GB, ahora ~265 MB); procesar y guardar los hallazgos por lotes. | RNF-14 | S | 5 | 7 |✅ |
 
 ---
 
@@ -63,7 +63,7 @@ y su caso de uso (`04 - Especificación de Casos de Uso.docx`).
 
 | Estado | Historias | Puntos |
 |---|---|---|
-| ✅ Terminadas | 24 | 117 |
-| 🔄 En curso | 3 | 11 |
-| ⏳ Pendientes | 2 | 13 |
+| ✅ Terminadas | 29 | 141 |
+| 🔄 En curso | 0 | 0 |
+| ⏳ Pendientes | 0 | 0 |
 | **Total** | **29** | **141** |

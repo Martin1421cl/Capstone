@@ -6,8 +6,10 @@ Tres flujos principales, tal como están implementados en `k-secure-web/ksecure/
 
 ## 1. Escanear archivos (CU-01)
 
-El auditor sube uno o varios archivos. K-Secure los guarda en una carpeta temporal con un nombre propio (el nombre
-del usuario nunca decide la ruta), los escanea, cifra cada original y borra los temporales.
+El auditor sube uno o varios archivos. K-Secure los copia a una carpeta temporal con un nombre propio (el nombre
+del usuario nunca decide la ruta), los escanea **en un hilo aparte** (RNF-18) y **guarda los hallazgos por lotes**
+mientras escanea (HU-29), cifrando cada original. El escaneo queda "en curso" hasta que termina; si algo falla, se
+borra entero. Al final se borran los temporales.
 
 ```mermaid
 sequenceDiagram
@@ -32,8 +34,12 @@ sequenceDiagram
     alt sin clave de auditor
         API-->>W: 409 "Primero crea la clave de auditor"
     end
-    API->>API: guarda cada archivo en carpeta temporal (máx. 100 MB)
-    API->>E: escanear_archivos(archivos, validadores activos)
+    API->>API: copia cada archivo a la carpeta temporal de a 1 MB (máx. 100 MB)
+    API->>R: Guardado(origen)
+    R->>B: nueva_llave_escaneo()
+    B-->>R: llave AES + llave cifrada con RSA
+    R->>DB: INSERT escaneo (estado "en_curso")
+    API->>E: escanear_archivos(archivos, validadores activos), en un hilo aparte
     loop por cada archivo
         E->>P: process_file(ruta)
         P-->>E: texto + metadata (o tabla por columnas)
@@ -41,12 +47,19 @@ sequenceDiagram
             E->>V: validate_content(texto, nombre, columna)
             V-->>E: lista de Match (confianza, riesgo, enmascarado)
         end
+        opt cada 2.000 hallazgos
+            E->>R: agregar(lote)
+            R->>DB: INSERT lote de hallazgos (enmascarado + cifrado) y COMMIT
+        end
     end
-    E-->>API: ResultadoEscaneo
-    API->>R: guardar(resultado)
-    R->>B: nueva_llave_escaneo()
-    B-->>R: llave AES + llave cifrada con RSA
-    R->>DB: INSERT escaneo + hallazgos (enmascarado + cifrado)
+    E-->>API: ResultadoEscaneo (total, filas, errores)
+    alt terminó bien
+        API->>R: terminar(resultado)
+        R->>DB: último lote, filas por fuente, errores y estado vacío
+    else falló
+        API->>R: cancelar()
+        R->>DB: DELETE escaneo y sus hallazgos
+    end
     API->>L: anotar("escaneo_archivos")
     L->>DB: INSERT evento
     API-->>W: {escaneo_id}

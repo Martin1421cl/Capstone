@@ -1,7 +1,7 @@
 # Plan de pruebas — K-Secure
 
 **Proyecto:** K-Secure · Capstone PTY4614-003 · Equipo 2
-**Versión del documento:** 1.2 · 17/11/2026 (HU-27: lectura determinista de tablas; antes 1.1 · 16/11/2026, sección 9)
+**Versión del documento:** 1.3 · 18/11/2026 (HU-29, RNF-18 y HU-17; antes 1.2 · 17/11/2026, HU-27)
 **Responsables:** Camilo Fuenzalida, Emanuel Farías, Martín Campos
 
 ---
@@ -26,12 +26,12 @@ la versión final.
 
 | Tipo | Qué verifica | Herramienta | Dónde está | N.º de pruebas |
 |---|---|---|---|---|
-| **Unitarias** | Cada validador (RUT con Módulo 11, Luhn, teléfonos, patentes...), preprocesadores, reglas, enmascarado, lectura determinista de tablas | pytest | `tests/test_*.py` | 215 |
+| **Unitarias** | Cada validador (RUT con Módulo 11, Luhn, teléfonos, patentes...), preprocesadores, reglas, enmascarado, lectura determinista de tablas, guardado por lotes, comparar escaneos | pytest | `tests/test_*.py` | 231 |
 | **Integración** | Flujos completos por la API: Admin → Auditor → Visor, escaneo → revisión → exportación, reglas nuevas | pytest + TestClient (httpx) | `tests/integracion/` | 4 |
 | **Seguridad** | Control de acceso por rol, fuerza bruta, inyección SQL, inyección de fórmulas CSV, *path traversal*, tamaño de archivos, solo lectura en la base del cliente, fuga de datos | pytest + TestClient | `tests/seguridad/` | 18 |
-| **Rendimiento** | Tiempos de escaneo con volúmenes realistas | pytest + `time.perf_counter` | `tests/rendimiento/` | 3 |
+| **Rendimiento** | Tiempos de escaneo con volúmenes realistas y que un escaneo largo no bloquee a los demás usuarios | pytest + `time.perf_counter` | `tests/rendimiento/` | 4 |
 | **Aceptación (manual)** | El usuario cumple sus tareas en la web | Navegador + casos PR-24 a PR-26 | Este documento | 3 |
-| **Total automatizadas** | | | | **240** |
+| **Total automatizadas** | | | | **257** |
 
 Las pruebas de seguridad se basan en el **OWASP Top 10**: A01 control de acceso roto, A03 inyección,
 A07 fallas de autenticación y A09 fallas de registro y monitoreo.
@@ -78,6 +78,8 @@ En un PC lento, los umbrales de rendimiento se pueden relajar con `KSECURE_FACTO
 | PR-08 | Borrar escaneo | RF-09 | Borrar un escaneo | Sus hallazgos desaparecen (cascada) | Integración | ✅ |
 | PR-09 | Recuperar contraseña | RF-14 | Pedir código y usarlo | Cambia la contraseña; el código vence a los 10 min | Automática | ✅ |
 | PR-10 | Mismo escaneo dos veces | RNF-08 | Escanear dos veces una tabla mayor al límite | Mismo resultado | Automática (`tests/test_lectura_determinista.py`) | ✅ |
+| PR-27 | Comparar dos escaneos de la misma fuente | RF-18 | Escanear un CSV, cambiarlo (se borra una fila, entra otra y se agrega la columna celular) y comparar | +10 teléfonos, 12 hallazgos nuevos, 2 que ya no están, columna `celular` nueva; todo enmascarado | Automática (`tests/test_comparar.py`) | ✅ |
+| PR-28 | Guardado por lotes | RNF-14 | Escanear con lotes de 25 hallazgos | Nunca hay más de un lote en memoria; se guardan todos; un escaneo en curso no aparece en el historial y uno que falla se borra entero | Automática (`tests/test_lotes.py`) | ✅ |
 
 ### 6.2 Seguridad
 
@@ -102,8 +104,11 @@ En un PC lento, los umbrales de rendimiento se pueden relajar con `KSECURE_FACTO
 | PR-21 | Texto de 1,4 MB sin datos sensibles | — | < 15 s y 0 falsos positivos | 0,2 s, 0 hallazgos | ✅ |
 | PR-22 | 5.000 RUT con el validador | RNF-05 | < 10 s | 0,4 s | ✅ |
 | PR-23 | Tabla de 100.000 filas | RNF-06 | ≤ 60 s | 32 s (ERS) | ✅ |
+| PR-29 | CSV de 100.000 filas subido por la web | RNF-14 | < 1 GB de RAM | ~265 MB y ~28 s (antes ~2,1 GB y ~52 s)** | ✅ |
+| PR-30 | Otro usuario navega mientras corre un escaneo largo | RNF-18 | Responde sin esperar al escaneo | Responde de inmediato; sin el hilo aparte esperaba 1,2 s (`rendimiento/test_concurrencia.py`) | ✅ |
 
-\* Medido el 31/10/2026 en el entorno de desarrollo.
+\* Medido el 31/10/2026 en el entorno de desarrollo. \*\* Medido el 18/11/2026, antes y después de HU-29, en el
+mismo equipo (detalle en [Requisitos no funcionales](Requisitos_No_Funcionales.md), sección 1).
 
 ### 6.4 Aceptación (manual, con un usuario)
 
@@ -126,7 +131,8 @@ En un PC lento, los umbrales de rendimiento se pueden relajar con `KSECURE_FACTO
 |---|---|---|---|---|
 | D-01 | RNF-08 | Una tabla mayor al límite de filas puede devolver filas distintas en cada escaneo (faltaba `ORDER BY`) | Media | Cerrado (HU-27, 17/11) |
 | D-02 | Pruebas | `test_bd_servidor_inalcanzable_da_error_claro` falla si no está instalado `psycopg` | Baja | Se resuelve con `pip install -r requirements.txt` |
-| D-03 | Medición de capacidad | Un CSV de 100.000 filas usa ~2,2 GB de RAM al escanearse; supera los 512 MB del plan gratis de Render (ver [Requisitos no funcionales](Requisitos_No_Funcionales.md)) | Alta en la nube, baja con Docker | Abierto (HU-29, sprint 7) |
+| D-03 | Medición de capacidad | Un CSV de 100.000 filas usa ~2,2 GB de RAM al escanearse; supera los 512 MB del plan gratis de Render (ver [Requisitos no funcionales](Requisitos_No_Funcionales.md)) | Alta en la nube, baja con Docker | Cerrado (HU-29, 18/11): ~265 MB |
+| D-04 | HU-17 | Al comparar escaneos, dos datos distintos con la misma máscara en la misma fila (ej. `pe****@correo.cl`) cuentan como el mismo, porque los originales se cifran con una llave distinta por escaneo | Baja | Aceptado: se avisa en la pantalla. Guardar un hash del original lo evitaría, pero un RUT se adivina por fuerza bruta |
 
 ## 9. Pruebas por sprint (evidencia)
 
@@ -141,17 +147,17 @@ ejecutó `pytest` en esa versión el 16/11/2026.
 | 4 | 12/10 | `4505ad6` | **72** | ✅ 72 pasan | Reescritura: RUT (21) y validadores chilenos (51): teléfono, tarjeta con Luhn, correo, cuenta bancaria, patente y claves |
 | 5 | 26/10 | `ce88693` | **141** | ✅ 141 pasan | Preprocesadores de archivos (16), mantenedor de reglas (23), API web (16), base del cliente simulado (3) y más casos de validadores (+11) |
 | 6 | 09/11 | `122ae94` | **235** | ✅ 235 pasan | Sesión y roles (20), recuperación de contraseña (18), bitácora (13), exportación (7), revisión de hallazgos (7), cifrado (4), **integración** (4), **seguridad** (18) y **rendimiento** (3) |
-| 7 | en curso | HU-27 (17/11) | **240** al 17/11 | ✅ 240 pasan | **Lectura determinista de tablas** (5, HU-27). Faltan las de HU-29 (memoria con archivos grandes) |
+| 7 | en curso (cierra el 23/11) | — | **257** al 18/11 | ✅ 257 pasan | Lectura determinista de tablas (5, HU-27), guardado por lotes (7, HU-29), escaneo sin bloquear a los demás (1, RNF-18) y comparar escaneos (9, HU-17) |
 
-Cobertura por tipo de prueba al 17/11 (sprint 7):
+Cobertura por tipo de prueba al 18/11 (sprint 7):
 
 | Tipo | Archivos | Pruebas |
 |---|---|---|
-| Unitarias | `tests/test_*.py` (13 archivos) | 215 |
+| Unitarias | `tests/test_*.py` (15 archivos) | 231 |
 | Integración | `tests/integracion/` | 4 |
 | Seguridad | `tests/seguridad/` | 18 |
-| Rendimiento | `tests/rendimiento/` | 3 |
-| **Total** | | **240** |
+| Rendimiento | `tests/rendimiento/` | 4 |
+| **Total** | | **257** |
 
 Para reproducir cualquier fila (por ejemplo, la del sprint 5):
 

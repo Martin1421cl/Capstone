@@ -31,6 +31,7 @@ erDiagram
         json filas_por_fuente
         json errores
         bytes llave_cifrada "llave AES del escaneo, cifrada con RSA"
+        string estado "en_curso mientras se guarda | vacío al terminar"
     }
     HALLAZGOS {
         int id PK

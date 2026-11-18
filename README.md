@@ -83,6 +83,7 @@ protección de datos personales, no saber dónde están esos datos es un riesgo 
 - Los datos se muestran siempre **enmascarados** (`**.***.198-5`); el original queda **cifrado** y solo un auditor
   con su clave puede verlo, y queda registrado en la bitácora.
 - Permite crear **reglas nuevas sin programar**, a partir de ejemplos del dato.
+- **Compara dos escaneos** de la misma fuente para ver si los datos sensibles aumentaron o disminuyeron.
 
 Es la capa de **clasificación** que alimenta a una solución DLP (prevención de fuga de datos): le dice a la empresa
 *dónde* tiene datos sensibles, *de qué tipo* son y *qué tan grave* sería que se filtren.

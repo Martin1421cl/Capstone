@@ -4,7 +4,7 @@ Complementa la sección de requisitos no funcionales (RNF-01 a RNF-12) de
 `03 - Especificación de Requerimientos de Software (ERS).docx` con los requisitos de **infraestructura**:
 qué servidor se necesita, qué hay que instalar y con qué se desarrolló.
 
-**Versión:** 1.1 · 16/11/2026 (agrega la sección 6: escalabilidad) · Las cifras de memoria y tiempo se midieron en el entorno de desarrollo.
+**Versión:** 1.2 · 18/11/2026 (HU-29: memoria por lotes, RNF-14 y RNF-18 cumplidos; antes 1.1 · 16/11/2026, sección 6) · Las cifras de memoria y tiempo se midieron en el entorno de desarrollo.
 
 ---
 
@@ -25,22 +25,26 @@ corre en servidores modestos. Lo que más pesa es la **memoria al escanear archi
 
 ### Consumo medido al escanear un CSV subido por la web
 
-| Tamaño del archivo | Filas | Tiempo | Memoria máxima del proceso | Base interna después |
+Medido el 18/11/2026 en el mismo equipo, antes y después de HU-29 (guardar los hallazgos por lotes):
+
+| Tamaño del archivo | Filas | Tiempo antes → ahora | Memoria máxima antes → ahora | Base interna después |
 |---|---|---|---|---|
-| — (app en reposo) | — | — | ~95 MB | — |
+| — (app en reposo) | — | — | ~85–95 MB | — |
 | 0,2 MB | 2.000 | ~1 s | — | — |
-| 1,0 MB | 10.000 | ~8 s | ~300 MB | — |
-| 5,4 MB | 50.000 | ~41 s | ~1,1 GB | — |
-| 10,7 MB | 100.000 | ~78 s | ~2,2 GB | ~130 MB acumulado* |
+| 1,0 MB | 10.000 | ~5 s → **~3 s** | ~300 MB → **~120 MB** | — |
+| 5,4 MB | 50.000 | ~24 s → **~14 s** | ~1,1 GB → **~185 MB** | — |
+| 10,7 MB | 100.000 | ~52 s → **~28 s** | ~2,1 GB → **~265 MB** | ~130 MB acumulado* |
 
 \* Cada hallazgo guarda su valor enmascarado y cifrado; 100.000 filas con 3 datos sensibles cada una generan
-~300.000 hallazgos.
+~300.000 hallazgos. En la primera medición (31/10, otro PC) el CSV de 100.000 filas tardó ~78 s con ~2,2 GB.
+
+Qué cambió (HU-29): antes se juntaban los 300.000 hallazgos en memoria y se guardaban al final como objetos del ORM;
+ahora se guardan en la base de a 2.000 mientras se escanea, y el archivo subido se copia al disco de a 1 MB.
 
 Para tablas de bases de datos (escaneo por columnas con límite de filas), la ERS registra 100.000 filas en 32 s (RNF-06).
 
-> **Limitación conocida (D-03):** el plan gratis de Render tiene **512 MB de RAM**, suficiente para la demo y para
-> archivos de hasta ~10.000 filas. Para archivos más grandes se debe usar un plan con más memoria o la instalación con
-> Docker en un servidor propio. Optimizar la memoria del escaneo de archivos grandes está en el backlog (HU-29).
+> **D-03 resuelto (HU-29):** el plan gratis de Render tiene **512 MB de RAM**. Antes alcanzaba para archivos de hasta
+> ~10.000 filas; ahora un CSV de 100.000 filas usa ~265 MB, así que cabe con margen.
 
 ---
 
@@ -90,7 +94,7 @@ con `pip` (Oracle en modo *thin*, sin Oracle Client).
 | Framework web | FastAPI |
 | Frontend | HTML, CSS y JavaScript sin frameworks |
 | Control de versiones | Git + GitHub (`Martin1421cl/Capstone`) |
-| Pruebas | pytest (240 pruebas automáticas) |
+| Pruebas | pytest (257 pruebas automáticas) |
 | Base de datos de pruebas | SQLite en memoria; PostgreSQL en Neon y en Docker para la demo |
 | Despliegue | Render (app) + Neon (PostgreSQL), región AWS us-east-2; Docker Compose para servidor propio |
 | Diagramas | Mermaid (en el repositorio) |
@@ -119,14 +123,14 @@ Resumen de los RNF de la ERS más los de infraestructura de este documento.
 | RNF-08 | Determinismo | Mismo escaneo, mismo resultado | `ORDER BY` por llave primaria al leer tablas (HU-27) | ✅ |
 | RNF-09 | Usabilidad | Interfaz en español; reglas sin expresiones regulares | Prueba con usuario | ✅ |
 | RNF-10 | Portabilidad | Corre en cualquier sistema con Python 3.11+ o Docker | Render, Docker y local | ✅ |
-| RNF-11 | Mantenibilidad | Pruebas automáticas que cubren el sistema | 240 pruebas, todas pasan | ✅ |
+| RNF-11 | Mantenibilidad | Pruebas automáticas que cubren el sistema | 257 pruebas, todas pasan | ✅ |
 | RNF-12 | Seguridad | Contraseñas con bcrypt y sesiones que expiran | 30 min de inactividad, 12 h máximo | ✅ |
 | RNF-13 | Capacidad | Servidor mínimo 1 vCPU / 1 GB RAM; recomendado 2 vCPU / 4 GB | Medición de memoria (sección 1) | ✅ |
-| RNF-14 | Capacidad | Escanear un archivo de 100.000 filas sin superar 1 GB de RAM | Medido: ~2,2 GB (D-03) | ⏳ |
+| RNF-14 | Capacidad | Escanear un archivo de 100.000 filas sin superar 1 GB de RAM | Medido: ~265 MB (HU-29, sección 1) | ✅ |
 | RNF-15 | Disponibilidad | La app informa su estado en `/api/health` (healthcheck de Docker y Render) | `docker compose ps` muestra `healthy` | ✅ |
 | RNF-16 | Seguridad | En producción, acceso solo por HTTPS; cookie de sesión `HttpOnly` y `Secure` | Render entrega HTTPS; revisión de `web/sesion.py` | ✅ |
 | RNF-17 | Escalabilidad | La app no guarda estado en memoria: puede correr en varias instancias contra la misma base PostgreSQL | Revisión del diseño (sección 6) | ✅ |
-| RNF-18 | Escalabilidad | Un escaneo largo no debe bloquear al resto de los usuarios | Hoy el escaneo de archivos subidos bloquea el servidor mientras dura (sección 6) | ⏳ |
+| RNF-18 | Escalabilidad | Un escaneo largo no debe bloquear al resto de los usuarios | El escaneo de archivos subidos corre en un hilo aparte; prueba automática `tests/test_concurrencia.py` | ✅ |
 
 ---
 
@@ -143,6 +147,8 @@ Cómo crece K-Secure cuando aumentan los usuarios, los escaneos o el tamaño de 
 | **Tamaño de cada escaneo** | Límite de 100 MB por archivo y de 1.000, 10.000 o 100.000 filas por tabla | Un escaneo no puede consumir recursos sin límite |
 | **Nuevos tipos de dato** | Cada tipo es un validador independiente; las reglas se crean desde la pantalla | Crecer en cobertura sin tocar el motor |
 | **Despliegue** | Imagen Docker configurada por variables de entorno | Levantar más instancias en cualquier servidor u orquestador |
+| **Memoria por escaneo** (HU-29) | Los hallazgos se guardan en la base de a 2.000 mientras se escanea | La memoria no crece con la cantidad de hallazgos: ~265 MB para 100.000 filas |
+| **Escaneos en hilos aparte** (RNF-18) | Archivos y bases de datos se escanean fuera del hilo que atiende las peticiones; cada lote se confirma por separado | Mientras alguien escanea, los demás usuarios siguen navegando y la base no queda bloqueada |
 
 > Para correr más de una instancia hay que usar **PostgreSQL**: SQLite es un archivo local y no se comparte entre
 > servidores.
@@ -151,7 +157,7 @@ Cómo crece K-Secure cuando aumentan los usuarios, los escaneos o el tamaño de 
 
 | Límite | Efecto | Cómo se resuelve |
 |---|---|---|
-| El servidor arranca con **un solo proceso** de Uvicorn, y el escaneo de **archivos subidos** corre en su hilo principal | Mientras dura un escaneo grande, las demás peticiones esperan (el escaneo de bases de datos sí corre en un hilo aparte) | Corto plazo: `uvicorn --workers N` o varias instancias. Mejor solución: escanear en un hilo aparte o en segundo plano, con progreso en pantalla (RNF-18) |
-| Memoria al escanear archivos grandes (~2,2 GB para un CSV de 100.000 filas) | Limita el tamaño de archivo por instancia | HU-29: procesar y guardar los hallazgos por lotes (RNF-14) |
+| El servidor arranca con **un solo proceso** de Uvicorn. Los escaneos ya corren en hilos aparte (RNF-18), pero el análisis de Python usa un núcleo a la vez | Varios escaneos grandes al mismo tiempo se reparten la misma CPU y tardan más | `uvicorn --workers N` o varias instancias con PostgreSQL. A futuro: escaneos en segundo plano con progreso en pantalla |
+| Un escaneo muy largo mantiene abierta la petición del navegador | Si se corta la conexión, el escaneo en curso se descarta (no queda a medias: se borra) | Escaneos en segundo plano con una cola de trabajos |
 | Plan gratis de Render: 512 MB de RAM y la app "duerme" tras 15 min | Pensado para la demo, no para uso en empresa | Plan pagado o instalación con Docker en un servidor propio |
 

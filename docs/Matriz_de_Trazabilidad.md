@@ -32,7 +32,7 @@ Fuentes: `03 - Especificación de Requerimientos de Software (ERS).docx`, `04 - 
 | RF-15 | Exportar a PDF, CSV y JSON | CU-11 | HU-15 | `exportar.py`, `web/api/resultados.py` | `test_exportar.py`, `integracion/test_flujo_completo.py`, `seguridad/test_seguridad_api.py` | ✅ |
 | RF-16 | Confirmar o descartar hallazgos dudosos con un motivo | CU-12 | HU-16 | `almacenamiento/repositorio.py`, `web/api/resultados.py` | `test_revision.py`, `integracion/test_flujo_completo.py` | ✅ |
 | RF-17 | Bitácora de quién escaneó, reveló datos o cambió reglas | CU-13 | HU-23 | `almacenamiento/bitacora.py`, `web/api/bitacora.py` | `test_bitacora.py`, `seguridad/test_seguridad_api.py` | ✅ |
-| RF-18 | Comparar dos escaneos de la misma fuente | CU-13 | HU-17 | — | — | ⏳ Sprint 7 |
+| RF-18 | Comparar dos escaneos de la misma fuente | CU-13 | HU-17 | `almacenamiento/repositorio.py::comparar`, `web/api/resultados.py`, `static/comparar.html` | `test_comparar.py` | ✅ |
 
 ## 2. Requisitos no funcionales
 
@@ -48,12 +48,14 @@ Fuentes: `03 - Especificación de Requerimientos de Software (ERS).docx`, `04 - 
 | RNF-08 | Determinismo | Mismo escaneo, mismo resultado | HU-27 | `ORDER BY` por llave primaria (o por todas las columnas) en `escaneo/bases_datos.py` | ✅ |
 | RNF-09 | Usabilidad | Interfaz en español; reglas sin expresiones regulares | HU-18 | Prueba con usuario (Plan de pruebas PR-24 a PR-26) | ✅ |
 | RNF-10 | Portabilidad | Python 3.11+ en local, nube o Docker | HU-24, HU-25 | Render, Docker Compose y local | ✅ |
-| RNF-11 | Mantenibilidad | Pruebas automáticas | HU-26 | 240 pruebas con pytest | ✅ |
+| RNF-11 | Mantenibilidad | Pruebas automáticas | HU-26 | 257 pruebas con pytest | ✅ |
 | RNF-12 | Seguridad | Contraseñas con bcrypt; sesiones que expiran | HU-20 | `test_sesion.py` | ✅ |
 | RNF-13 | Capacidad | Servidor mínimo 1 vCPU / 1 GB; recomendado 2 vCPU / 4 GB | — | [`Requisitos_No_Funcionales.md`](Requisitos_No_Funcionales.md) | ✅ |
-| RNF-14 | Capacidad | Archivo de 100.000 filas con menos de 1 GB de RAM | HU-29 | Medido: ~2,2 GB (defecto D-03) | ⏳ Sprint 7 |
+| RNF-14 | Capacidad | Archivo de 100.000 filas con menos de 1 GB de RAM | HU-29 | Medido: ~265 MB (antes ~2,1 GB) · `test_lotes.py` | ✅ |
 | RNF-15 | Disponibilidad | Estado en `/api/health` | HU-25 | `test_web.py::test_paginas_y_health`, healthcheck de Docker | ✅ |
 | RNF-16 | Seguridad | HTTPS en producción; cookie `HttpOnly` y `Secure` | HU-20 | Revisión de `web/sesion.py`; Render entrega HTTPS | ✅ |
+| RNF-17 | Escalabilidad | Sin estado en memoria: varias instancias contra la misma base PostgreSQL | — | Revisión del diseño ([Requisitos no funcionales](Requisitos_No_Funcionales.md), sección 6) | ✅ |
+| RNF-18 | Escalabilidad | Un escaneo largo no bloquea al resto de los usuarios | HU-29 | `test_concurrencia.py` | ✅ |
 
 ## 3. Objetivos específicos → requisitos
 
@@ -71,5 +73,5 @@ Fuentes: `03 - Especificación de Requerimientos de Software (ERS).docx`, `04 - 
 
 | | Total | ✅ | ⏳ |
 |---|---|---|---|
-| Requisitos funcionales | 18 | 17 | 1 (RF-18, prioridad baja) |
-| Requisitos no funcionales | 16 | 15 | 1 (RNF-14) |
+| Requisitos funcionales | 18 | 18 | 0 |
+| Requisitos no funcionales | 18 | 18 | 0 |

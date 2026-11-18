@@ -1,7 +1,7 @@
 # Documento de diseño — K-Secure
 
 **Proyecto:** K-Secure · Capstone PTY4614-003 · Equipo 2
-**Versión:** 1.0 · 16/11/2026
+**Versión:** 1.1 · 18/11/2026 (guardado por lotes, escaneos en hilo aparte y comparar escaneos; antes 1.0 · 16/11/2026)
 
 Este documento reúne en un solo lugar el diseño de K-Secure: arquitectura, componentes, comunicación entre servicios,
 modelo de datos, diagramas UML, diseño Docker y las **decisiones técnicas** con su justificación. Cada sección resume y
@@ -72,6 +72,9 @@ el escaneo o la cuenta.
 
 **Regla de diseño:** el dato original nunca se guarda en claro. Cada hallazgo tiene `valor_enmascarado` (para mostrar) y
 `valor_cifrado` (para el auditor con su clave).
+
+Desde HU-29, `escaneos.estado` vale `en_curso` mientras se guardan sus hallazgos por lotes y queda vacío al terminar:
+un escaneo en curso no aparece en el historial, y si falla se borra entero.
 
 ![Modelo entidad-relación](diagramas/img/er_base_interna.png)
 
@@ -150,6 +153,9 @@ Cómo levantarlo: sección *Ejecución local* del [README](../README.md) y secci
 | DT-11 | **Correos por Apps Script de Gmail** | SMTP directo | El plan gratis de Render bloquea SMTP |
 | DT-12 | **Docker Compose** para servidor propio | Instalar a mano | No depende del sistema operativo; app y base levantan con un comando |
 | DT-13 | **Reglas nuevas desde ejemplos del dato** | Pedir expresiones regulares | Cualquier analista puede crear un detector sin saber programar |
+| DT-14 | **Guardar los hallazgos por lotes** de 2.000 mientras se escanea, con `INSERT` directo (HU-29) | Juntarlos todos y guardarlos al final como objetos del ORM | Un CSV de 100.000 filas bajó de ~2,1 GB a ~265 MB de RAM y de ~52 s a ~28 s: cabe en los 512 MB del plan gratis de Render |
+| DT-15 | **Escanear en un hilo aparte** y confirmar cada lote por separado (RNF-18) | Escanear en el hilo que atiende las peticiones; una sola transacción larga | Mientras alguien escanea, los demás siguen usando la app; en SQLite una transacción larga bloquearía las escrituras de los demás |
+| DT-16 | **Comparar escaneos por ubicación y valor enmascarado** (HU-17) | Comparar los originales; guardar un hash de cada original | Los originales están cifrados con una llave distinta por escaneo, y un hash de un RUT se adivina por fuerza bruta. A cambio, dos datos con la misma máscara en la misma fila cuentan como el mismo (D-04) |
 
 Las decisiones de alcance del proyecto (construir solo la capa de clasificación, rehacer el sistema desde cero, login
 sin registro público, cliente simulado) están en el
@@ -161,5 +167,6 @@ sin registro público, cliente simulado) están en el
 
 | Limitación | Efecto | Plan |
 |---|---|---|
-| El escaneo de **archivos subidos** corre en el hilo principal del servidor | Mientras dura un escaneo grande, las demás peticiones esperan | Moverlo a un hilo aparte o a escaneos en segundo plano (el de bases de datos ya corre en un hilo aparte) |
-| Memoria al escanear archivos grandes (~2,2 GB para 100.000 filas) | Supera los 512 MB del plan gratis de Render | HU-29 (procesar por lotes) |
+| Un escaneo muy largo mantiene abierta la petición del navegador | Si se corta la conexión, el escaneo se descarta (no queda a medias) | Escaneos en segundo plano con una cola de trabajos y progreso en pantalla |
+| Varios escaneos grandes a la vez comparten un solo proceso | Se reparten la CPU y tardan más | `uvicorn --workers N` o varias instancias con PostgreSQL (RNF-17) |
+| Comparar escaneos usa el valor enmascarado | Dos datos distintos con la misma máscara en la misma fila cuentan como el mismo | Aceptado (D-04); se avisa en la pantalla |

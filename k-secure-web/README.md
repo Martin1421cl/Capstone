@@ -69,7 +69,7 @@ ksecure/
     ├── app.py              #   FastAPI: monta la API y las páginas
     ├── sesion.py           #   login: exige sesión en toda la web y revisa el rol de cada endpoint
     ├── api/                #   sesion.py · usuarios.py · escanear.py · resultados.py · auditor.py · reglas.py · bitacora.py · seguridad.py
-    └── static/             #   login, index, archivos, base-datos, resultados, historial, reglas, seguridad, usuarios, bitacora
+    └── static/             #   login, index, archivos, base-datos, resultados, historial, comparar, reglas, seguridad, usuarios, bitacora
 tests/
 ```
 
@@ -92,6 +92,13 @@ La API queda documentada en http://localhost:8000/docs (con sesión iniciada).
 **Revisión de hallazgos:** un Auditor o Admin marca cada hallazgo como **Confirmado** o **Falso positivo**
 (con su motivo), uno por uno en la vista Detalle o todos los del filtro de una vez. Resultados muestra el
 avance, se puede filtrar por estado y exportar sin los falsos positivos. Cada marca queda en la bitácora.
+
+**Comparar escaneos:** en **Historial**, "Comparar con el escaneo anterior" (o la página **Comparar escaneos**)
+muestra qué datos sensibles aumentaron o disminuyeron entre dos escaneos de la misma fuente: por riesgo, por tipo,
+por columna, y qué hallazgos aparecieron o ya no están. Todo enmascarado.
+
+**Archivos grandes:** los hallazgos se guardan en la base de a 2.000 mientras se escanea, así un CSV de 100.000 filas
+usa ~265 MB de RAM; el escaneo corre en un hilo aparte y no bloquea a los demás usuarios.
 
 **Exportar:** en **Resultados**, el botón **Exportar** descarga los hallazgos con los filtros de la
 pantalla en CSV (Excel), JSON (otros sistemas) o PDF (reporte). Siempre enmascarados y anotado en la bitácora.
