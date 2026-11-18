@@ -5,6 +5,7 @@ import tempfile
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -62,8 +63,10 @@ async def escanear_subidos(archivos: list[UploadFile], request: Request, db: Ses
                     destino.write(trozo)
             en_disco.append((str(ruta), nombre))
         validadores = reglas.validadores_activos(db)
-        resultado = _escanear_y_guardar(db, "archivo", titulo_de([n for _, n in en_disco]),
-                                        lambda r: escanear_archivos(en_disco, validadores, r))
+        # RNF-18: el escaneo corre en un hilo aparte; mientras tanto el servidor sigue atendiendo a los demás.
+        resultado = await run_in_threadpool(
+            _escanear_y_guardar, db, "archivo", titulo_de([n for _, n in en_disco]),
+            lambda r: escanear_archivos(en_disco, validadores, r))
     nombres = ", ".join(n for _, n in en_disco)
     anotar(request, db, "escaneo_archivos",
            f"{nombres} · {_hallazgos(resultado.total)} (escaneo #{resultado.escaneo_id})",
