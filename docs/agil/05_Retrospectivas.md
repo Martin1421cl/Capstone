@@ -60,10 +60,13 @@ y **¿qué vamos a cambiar?** Cada acción de mejora tiene un responsable y se r
 
 ## Retrospectiva Sprint 6 — Cuentas, seguridad y entrega (09/11)
 
-> *Pendiente: se completa en la reunión de cierre del sprint 6.*
+> Registrada el 18/11/2026, después del cierre del sprint.
 
 | ✅ Qué salió bien | ❌ Qué salió mal | 🔧 Qué vamos a cambiar |
 |---|---|---|
-| | | |
+| Se cerraron los requisitos de seguridad pendientes: login con roles, recuperación de contraseña, bitácora, exportación y revisión de hallazgos (RF-13 a RF-17). | Casi todo lo demás se subió en los últimos dos días del sprint (05 y 06/11). | Subir avances de a poco durante el sprint, no al final. |
+| La carga se repartió mejor, como se acordó en el sprint 5: los tres hicimos commits (CF 3, EF 10, MC 7). | Hubo commits con usuarios distintos (Emanuel2234, Martin1421cl) y subidas desde la web de GitHub, que el revisor no asigna a nadie. | Revisar `git config user.name` antes de cada commit y no subir archivos desde la web; el `.mailmap` une los nombres anteriores. |
+| Quedó listo para evaluar: Docker probado, plan de pruebas con 235 pruebas (integración, seguridad y rendimiento), manual técnico, modelo ER y diagramas UML. | La medición de capacidad mostró que un CSV de 100.000 filas usa ~2,2 GB de RAM, más que los 512 MB del plan gratis de Render (D-03). | Priorizar HU-29 (memoria por lotes) en el sprint 7. |
+| Las entregas quedaron ordenadas por fase, como pidió el docente. | La retrospectiva no se hizo el día de cierre. | Hacer la retrospectiva del sprint 7 el mismo 23/11. |
 
-**Acciones:**
+**Acciones:** HU-29 (CF) · HU-17 y RNF-18 (EF) · HU-27 y documento de diseño (MC) · revisar `git config` antes de cada commit (todos) · retrospectiva del sprint 7 el 23/11 (todos).
