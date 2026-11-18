@@ -37,6 +37,19 @@ def detalle(escaneo_id: int, db: Session = Depends(get_db)):
     return d
 
 
+@router.get("/{escaneo_id}/comparar/{otro_id}", dependencies=[VISOR_O_MAS])
+def comparar(escaneo_id: int, otro_id: int, db: Session = Depends(get_db)):
+    """HU-17: diferencias entre dos escaneos (por riesgo, tipo y columna, y hallazgos nuevos o resueltos).
+
+    Todo va enmascarado, igual que en los resultados. Se compara del más antiguo al más reciente.
+    """
+    if escaneo_id == otro_id:
+        raise HTTPException(400, "Elige dos escaneos distintos")
+    if (d := repositorio.comparar(db, escaneo_id, otro_id)) is None:
+        raise HTTPException(404, "Escaneo no encontrado")
+    return d
+
+
 @router.get("/{escaneo_id}/hallazgos", dependencies=[VISOR_O_MAS])
 def hallazgos(escaneo_id: int, riesgo: str = "", tipo: str = "", buscar: str = "",
               pagina: int = Query(1, ge=1), por_pagina: int = Query(50, ge=1, le=200),

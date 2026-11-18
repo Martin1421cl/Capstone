@@ -309,3 +309,80 @@ def revelar(db: Session, hallazgo_id: int, clave: str) -> str | None:
         return None
     return boveda.revelar(db, clave, h.escaneo.llave_cifrada, h.valor_cifrado)
 
+
+# --- HU-17: comparar dos escaneos de la misma fuente -------------------------------------------------
+MUESTRA_COMPARAR = 50  # cuántos hallazgos nuevos y resueltos se listan (el total siempre se informa)
+
+
+def _huellas(db: Session, escaneo_id: int) -> dict[tuple, str]:
+    """Cada hallazgo por dónde está y qué dato es (enmascarado), con su riesgo.
+
+    Se compara el valor enmascarado porque los originales se cifran con una llave distinta por escaneo.
+    Con HU-27 una tabla se lee siempre en el mismo orden, así que la misma fila tiene la misma posición.
+    Limitación: dos datos distintos con la misma máscara en la misma posición (ej. pe****@correo.cl)
+    cuentan como el mismo. Guardar un hash del original lo evitaría, pero un RUT se adivina por fuerza bruta.
+    """
+    filas = db.execute(select(Hallazgo.fuente, Hallazgo.columna, Hallazgo.posicion, Hallazgo.tipo,
+                              Hallazgo.valor_enmascarado, Hallazgo.riesgo)
+                       .where(Hallazgo.escaneo_id == escaneo_id).execution_options(yield_per=5000))
+    return {(f, c, p, t, v): r for f, c, p, t, v, r in filas}
+
+
+def _muestra(huellas: dict[tuple, str], claves: set[tuple]) -> dict:
+    orden = sorted(claves, key=lambda k: (ORDEN_RIESGO.index(huellas[k]) if huellas[k] in ORDEN_RIESGO else 9,
+                                          k[0], k[1] or "", k[2]))
+    return {"total": len(claves), "muestra": [
+        {"fuente": f, "columna": c, "posicion": p, "tipo": t, "valor": v, "riesgo": huellas[(f, c, p, t, v)]}
+        for f, c, p, t, v in orden[:MUESTRA_COMPARAR]]}
+
+
+def _diferencias(antes: dict[str, int], despues: dict[str, int], orden: list[str]) -> list[dict]:
+    claves = sorted(set(antes) | set(despues), key=lambda k: (orden.index(k) if k in orden else len(orden), k))
+    return [{"clave": k, "anterior": antes.get(k, 0), "actual": despues.get(k, 0),
+             "diferencia": despues.get(k, 0) - antes.get(k, 0)} for k in claves]
+
+
+def comparar(db: Session, id_a: int, id_b: int) -> dict | None:
+    """Qué cambió entre dos escaneos: por riesgo, por tipo, por columna, y qué hallazgos aparecieron o ya no están.
+
+    Siempre compara del más antiguo ("anterior") al más reciente ("actual"), sin importar el orden pedido.
+    """
+    a, b = db.get(Escaneo, id_a), db.get(Escaneo, id_b)
+    if a is None or b is None or a.estado or b.estado:
+        return None
+    anterior, actual = (a, b) if (a.fecha, a.id) <= (b.fecha, b.id) else (b, a)
+
+    def por_tipo(e: Escaneo) -> dict[str, int]:
+        return dict(db.execute(select(Hallazgo.tipo, func.count()).where(Hallazgo.escaneo_id == e.id)
+                               .group_by(Hallazgo.tipo)).all())
+
+    def columnas(e: Escaneo) -> dict[tuple, dict]:
+        return {(c["fuente"], c["columna"]): c for c in columnas_sensibles(db, e)}
+
+    cols_a, cols_b = columnas(anterior), columnas(actual)
+    lista_columnas = []
+    for clave in sorted(set(cols_a) | set(cols_b)):
+        ca, cb = cols_a.get(clave), cols_b.get(clave)
+        base = cb or ca
+        lista_columnas.append({
+            "fuente": base["fuente"], "columna": base["columna"], "tipo": base["tipo"], "riesgo": base["riesgo"],
+            "anterior": ca["porcentaje"] if ca else None, "actual": cb["porcentaje"] if cb else None,
+            "estado": "nueva" if ca is None else "ya_no_esta" if cb is None else "sigue",
+        })
+    lista_columnas.sort(key=lambda c: (ORDEN_RIESGO.index(c["riesgo"]), c["estado"] == "sigue", c["fuente"]))
+
+    huellas_a, huellas_b = _huellas(db, anterior.id), _huellas(db, actual.id)
+    nuevos, resueltos = set(huellas_b) - set(huellas_a), set(huellas_a) - set(huellas_b)
+    resumen_a, resumen_b = _resumen(db, anterior), _resumen(db, actual)
+    return {
+        "anterior": resumen_a, "actual": resumen_b,
+        "misma_fuente": (anterior.origen_tipo, anterior.origen_nombre) == (actual.origen_tipo, actual.origen_nombre),
+        "total": {"anterior": resumen_a["total"], "actual": resumen_b["total"],
+                  "diferencia": resumen_b["total"] - resumen_a["total"]},
+        "por_riesgo": _diferencias(resumen_a["por_riesgo"], resumen_b["por_riesgo"], ORDEN_RIESGO),
+        "por_tipo": _diferencias(por_tipo(anterior), por_tipo(actual), ORDEN_TIPOS),
+        "columnas": lista_columnas,
+        "nuevos": _muestra(huellas_b, nuevos),
+        "resueltos": _muestra(huellas_a, resueltos),
+        "sin_cambios": len(set(huellas_a) & set(huellas_b)),
+    }
