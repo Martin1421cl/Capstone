@@ -163,4 +163,3 @@ sin registro público, cliente simulado) están en el
 |---|---|---|
 | El escaneo de **archivos subidos** corre en el hilo principal del servidor | Mientras dura un escaneo grande, las demás peticiones esperan | Moverlo a un hilo aparte o a escaneos en segundo plano (el de bases de datos ya corre en un hilo aparte) |
 | Memoria al escanear archivos grandes (~2,2 GB para 100.000 filas) | Supera los 512 MB del plan gratis de Render | HU-29 (procesar por lotes) |
-| Lectura de tablas sin `ORDER BY` | Una tabla más grande que el límite puede dar filas distintas en cada escaneo | HU-27 |

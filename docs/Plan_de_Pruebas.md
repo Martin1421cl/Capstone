@@ -1,7 +1,7 @@
 # Plan de pruebas — K-Secure
 
 **Proyecto:** K-Secure · Capstone PTY4614-003 · Equipo 2
-**Versión del documento:** 1.1 · 16/11/2026 (agrega la sección 9: pruebas por sprint)
+**Versión del documento:** 1.2 · 17/11/2026 (HU-27: lectura determinista de tablas; antes 1.1 · 16/11/2026, sección 9)
 **Responsables:** Camilo Fuenzalida, Emanuel Farías, Martín Campos
 
 ---
@@ -26,12 +26,12 @@ la versión final.
 
 | Tipo | Qué verifica | Herramienta | Dónde está | N.º de pruebas |
 |---|---|---|---|---|
-| **Unitarias** | Cada validador (RUT con Módulo 11, Luhn, teléfonos, patentes...), preprocesadores, reglas, enmascarado | pytest | `tests/test_*.py` | 210 |
+| **Unitarias** | Cada validador (RUT con Módulo 11, Luhn, teléfonos, patentes...), preprocesadores, reglas, enmascarado, lectura determinista de tablas | pytest | `tests/test_*.py` | 215 |
 | **Integración** | Flujos completos por la API: Admin → Auditor → Visor, escaneo → revisión → exportación, reglas nuevas | pytest + TestClient (httpx) | `tests/integracion/` | 4 |
 | **Seguridad** | Control de acceso por rol, fuerza bruta, inyección SQL, inyección de fórmulas CSV, *path traversal*, tamaño de archivos, solo lectura en la base del cliente, fuga de datos | pytest + TestClient | `tests/seguridad/` | 18 |
 | **Rendimiento** | Tiempos de escaneo con volúmenes realistas | pytest + `time.perf_counter` | `tests/rendimiento/` | 3 |
 | **Aceptación (manual)** | El usuario cumple sus tareas en la web | Navegador + casos PR-24 a PR-26 | Este documento | 3 |
-| **Total automatizadas** | | | | **235** |
+| **Total automatizadas** | | | | **240** |
 
 Las pruebas de seguridad se basan en el **OWASP Top 10**: A01 control de acceso roto, A03 inyección,
 A07 fallas de autenticación y A09 fallas de registro y monitoreo.
@@ -77,7 +77,7 @@ En un PC lento, los umbrales de rendimiento se pueden relajar con `KSECURE_FACTO
 | PR-07 | Exportar sin falsos positivos | RF-15, RF-16 | Marcar un falso positivo y exportar confirmados | El archivo no trae el falso positivo ni originales | Integración | ✅ |
 | PR-08 | Borrar escaneo | RF-09 | Borrar un escaneo | Sus hallazgos desaparecen (cascada) | Integración | ✅ |
 | PR-09 | Recuperar contraseña | RF-14 | Pedir código y usarlo | Cambia la contraseña; el código vence a los 10 min | Automática | ✅ |
-| PR-10 | Mismo escaneo dos veces | RNF-08 | Escanear dos veces una tabla mayor al límite | Mismo resultado | Manual | ⏳ (falta `ORDER BY`) |
+| PR-10 | Mismo escaneo dos veces | RNF-08 | Escanear dos veces una tabla mayor al límite | Mismo resultado | Automática (`tests/test_lectura_determinista.py`) | ✅ |
 
 ### 6.2 Seguridad
 
@@ -124,7 +124,7 @@ En un PC lento, los umbrales de rendimiento se pueden relajar con `KSECURE_FACTO
 
 | ID | Encontrado en | Descripción | Severidad | Estado |
 |---|---|---|---|---|
-| D-01 | RNF-08 | Una tabla mayor al límite de filas puede devolver filas distintas en cada escaneo (falta `ORDER BY`) | Media | Abierto (sprint 7) |
+| D-01 | RNF-08 | Una tabla mayor al límite de filas puede devolver filas distintas en cada escaneo (faltaba `ORDER BY`) | Media | Cerrado (HU-27, 17/11) |
 | D-02 | Pruebas | `test_bd_servidor_inalcanzable_da_error_claro` falla si no está instalado `psycopg` | Baja | Se resuelve con `pip install -r requirements.txt` |
 | D-03 | Medición de capacidad | Un CSV de 100.000 filas usa ~2,2 GB de RAM al escanearse; supera los 512 MB del plan gratis de Render (ver [Requisitos no funcionales](Requisitos_No_Funcionales.md)) | Alta en la nube, baja con Docker | Abierto (HU-29, sprint 7) |
 
@@ -141,17 +141,17 @@ ejecutó `pytest` en esa versión el 16/11/2026.
 | 4 | 12/10 | `4505ad6` | **72** | ✅ 72 pasan | Reescritura: RUT (21) y validadores chilenos (51): teléfono, tarjeta con Luhn, correo, cuenta bancaria, patente y claves |
 | 5 | 26/10 | `ce88693` | **141** | ✅ 141 pasan | Preprocesadores de archivos (16), mantenedor de reglas (23), API web (16), base del cliente simulado (3) y más casos de validadores (+11) |
 | 6 | 09/11 | `122ae94` | **235** | ✅ 235 pasan | Sesión y roles (20), recuperación de contraseña (18), bitácora (13), exportación (7), revisión de hallazgos (7), cifrado (4), **integración** (4), **seguridad** (18) y **rendimiento** (3) |
-| 7 | en curso | — | 235 al 16/11 | ✅ | Se agregan con HU-27 (lectura determinista de tablas) y HU-29 (memoria con archivos grandes) |
+| 7 | en curso | HU-27 (17/11) | **240** al 17/11 | ✅ 240 pasan | **Lectura determinista de tablas** (5, HU-27). Faltan las de HU-29 (memoria con archivos grandes) |
 
-Cobertura por tipo de prueba al cierre del sprint 6:
+Cobertura por tipo de prueba al 17/11 (sprint 7):
 
 | Tipo | Archivos | Pruebas |
 |---|---|---|
-| Unitarias | `tests/test_*.py` (12 archivos) | 210 |
+| Unitarias | `tests/test_*.py` (13 archivos) | 215 |
 | Integración | `tests/integracion/` | 4 |
 | Seguridad | `tests/seguridad/` | 18 |
 | Rendimiento | `tests/rendimiento/` | 3 |
-| **Total** | | **235** |
+| **Total** | | **240** |
 
 Para reproducir cualquier fila (por ejemplo, la del sprint 5):
 

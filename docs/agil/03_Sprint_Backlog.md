@@ -117,7 +117,7 @@ las divide en tareas y se las reparte. Las fechas y el avance se respaldan con e
 
 | Historia | Tareas | Responsable | Pts | Estado |
 |---|---|---|---|---|
-| HU-27 | `ORDER BY` por llave primaria al leer tablas | CF | 2 | ⏳ |
+| HU-27 | `ORDER BY` por llave primaria al leer tablas, con 5 pruebas nuevas (17/11) | MC | 2 | ✅ |
 | HU-17 | Comparar dos escaneos de la misma fuente | EF | 8 | ⏳ |
 | HU-29 | Escaneo de archivos grandes por lotes (menos memoria) | CF | 5 | ⏳ |
 | — | Prueba con la base del cliente simulado en Neon | EF | — | ⏳ |

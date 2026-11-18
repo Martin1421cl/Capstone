@@ -53,7 +53,7 @@ y su caso de uso (`04 - Especificación de Casos de Uso.docx`).
 | HU-24 | E7 | Como **cliente**, quiero usar K-Secure sin instalar ni configurar nada, porque no voy a tocar código. | Publicado en la nube (Render + Neon) con URL y login. | RNF-10 | M | 5 | 5 | ✅ |
 | HU-25 | E7 | Como **equipo de TI**, quiero levantar K-Secure con Docker, para instalarlo en un servidor propio. | `docker compose up` levanta app + PostgreSQL; `.env.example` documentado. | RNF-10 | S | 3 | 6 | 🔄 |
 | HU-26 | E7 | Como **equipo**, queremos pruebas de integración, seguridad y rendimiento, para asegurar la calidad antes de entregar. | Plan de pruebas documentado; pruebas automáticas que pasan. | RNF-11 | M | 5 | 6 | 🔄 |
-| HU-27 | E7 | Como **auditor**, quiero que el mismo escaneo repetido dé el mismo resultado, para comparar en el tiempo. | Lectura de tablas con `ORDER BY` por llave primaria. | RNF-08 | S | 2 | 7 | ⏳ |
+| HU-27 | E7 | Como **auditor**, quiero que el mismo escaneo repetido dé el mismo resultado, para comparar en el tiempo. | Lectura de tablas con `ORDER BY` por llave primaria. | RNF-08 | S | 2 | 7 | ✅ |
 | HU-28 | E7 | Como **equipo de TI del cliente**, quiero un manual técnico, para instalar y operar K-Secure. | Instalación local, Docker y nube; variables de entorno; solución de problemas. | — | S | 3 | 6 | 🔄 |
 | HU-29 | E7 | Como **auditor**, quiero escanear archivos de 100.000 filas sin que el servidor se quede sin memoria, para usar K-Secure en el plan de nube disponible. | Archivo de 100.000 filas con menos de 1 GB de RAM (hoy ~2,2 GB); procesar y guardar los hallazgos por lotes. | RNF-14 | S | 5 | 7 | ⏳ |
 
@@ -63,7 +63,7 @@ y su caso de uso (`04 - Especificación de Casos de Uso.docx`).
 
 | Estado | Historias | Puntos |
 |---|---|---|
-| ✅ Terminadas | 23 | 115 |
+| ✅ Terminadas | 24 | 117 |
 | 🔄 En curso | 3 | 11 |
-| ⏳ Pendientes | 3 | 15 |
+| ⏳ Pendientes | 2 | 13 |
 | **Total** | **29** | **141** |

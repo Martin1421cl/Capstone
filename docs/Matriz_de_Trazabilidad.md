@@ -45,10 +45,10 @@ Fuentes: `03 - Especificación de Requerimientos de Software (ERS).docx`, `04 - 
 | RNF-05 | Rendimiento | 1.000 filas de una tabla en ≤ 1 s | — | Medido en la ERS: 0,3 s · `rendimiento/test_rendimiento.py` | ✅ |
 | RNF-06 | Rendimiento | 100.000 filas de una tabla en ≤ 60 s | — | Medido en la ERS: 32 s | ✅ |
 | RNF-07 | Exactitud | Columnas sensibles de la base demo sin falsos positivos | — | `test_cliente_simulado.py` | ✅ |
-| RNF-08 | Determinismo | Mismo escaneo, mismo resultado | HU-27 | Falta `ORDER BY` | ⏳ Sprint 7 |
+| RNF-08 | Determinismo | Mismo escaneo, mismo resultado | HU-27 | `ORDER BY` por llave primaria (o por todas las columnas) en `escaneo/bases_datos.py` | ✅ |
 | RNF-09 | Usabilidad | Interfaz en español; reglas sin expresiones regulares | HU-18 | Prueba con usuario (Plan de pruebas PR-24 a PR-26) | ✅ |
 | RNF-10 | Portabilidad | Python 3.11+ en local, nube o Docker | HU-24, HU-25 | Render, Docker Compose y local | ✅ |
-| RNF-11 | Mantenibilidad | Pruebas automáticas | HU-26 | 235 pruebas con pytest | ✅ |
+| RNF-11 | Mantenibilidad | Pruebas automáticas | HU-26 | 240 pruebas con pytest | ✅ |
 | RNF-12 | Seguridad | Contraseñas con bcrypt; sesiones que expiran | HU-20 | `test_sesion.py` | ✅ |
 | RNF-13 | Capacidad | Servidor mínimo 1 vCPU / 1 GB; recomendado 2 vCPU / 4 GB | — | [`Requisitos_No_Funcionales.md`](Requisitos_No_Funcionales.md) | ✅ |
 | RNF-14 | Capacidad | Archivo de 100.000 filas con menos de 1 GB de RAM | HU-29 | Medido: ~2,2 GB (defecto D-03) | ⏳ Sprint 7 |
@@ -72,4 +72,4 @@ Fuentes: `03 - Especificación de Requerimientos de Software (ERS).docx`, `04 - 
 | | Total | ✅ | ⏳ |
 |---|---|---|---|
 | Requisitos funcionales | 18 | 17 | 1 (RF-18, prioridad baja) |
-| Requisitos no funcionales | 16 | 14 | 2 (RNF-08, RNF-14) |
+| Requisitos no funcionales | 16 | 15 | 1 (RNF-14) |

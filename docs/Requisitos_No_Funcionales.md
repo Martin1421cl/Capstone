@@ -90,7 +90,7 @@ con `pip` (Oracle en modo *thin*, sin Oracle Client).
 | Framework web | FastAPI |
 | Frontend | HTML, CSS y JavaScript sin frameworks |
 | Control de versiones | Git + GitHub (`Martin1421cl/Capstone`) |
-| Pruebas | pytest (235 pruebas automáticas) |
+| Pruebas | pytest (240 pruebas automáticas) |
 | Base de datos de pruebas | SQLite en memoria; PostgreSQL en Neon y en Docker para la demo |
 | Despliegue | Render (app) + Neon (PostgreSQL), región AWS us-east-2; Docker Compose para servidor propio |
 | Diagramas | Mermaid (en el repositorio) |
@@ -116,10 +116,10 @@ Resumen de los RNF de la ERS más los de infraestructura de este documento.
 | RNF-05 | Rendimiento | 1.000 filas de una tabla en 1 s o menos | Medido: 0,3 s | ✅ |
 | RNF-06 | Rendimiento | 100.000 filas de una tabla en 60 s o menos | Medido: 32 s | ✅ |
 | RNF-07 | Exactitud | Todas las columnas sensibles de la base demo, sin falsos positivos | 9 de 9, 0 falsos positivos | ✅ |
-| RNF-08 | Determinismo | Mismo escaneo, mismo resultado | Falta `ORDER BY` (HU-27) | ⏳ |
+| RNF-08 | Determinismo | Mismo escaneo, mismo resultado | `ORDER BY` por llave primaria al leer tablas (HU-27) | ✅ |
 | RNF-09 | Usabilidad | Interfaz en español; reglas sin expresiones regulares | Prueba con usuario | ✅ |
 | RNF-10 | Portabilidad | Corre en cualquier sistema con Python 3.11+ o Docker | Render, Docker y local | ✅ |
-| RNF-11 | Mantenibilidad | Pruebas automáticas que cubren el sistema | 235 pruebas, todas pasan | ✅ |
+| RNF-11 | Mantenibilidad | Pruebas automáticas que cubren el sistema | 240 pruebas, todas pasan | ✅ |
 | RNF-12 | Seguridad | Contraseñas con bcrypt y sesiones que expiran | 30 min de inactividad, 12 h máximo | ✅ |
 | RNF-13 | Capacidad | Servidor mínimo 1 vCPU / 1 GB RAM; recomendado 2 vCPU / 4 GB | Medición de memoria (sección 1) | ✅ |
 | RNF-14 | Capacidad | Escanear un archivo de 100.000 filas sin superar 1 GB de RAM | Medido: ~2,2 GB (D-03) | ⏳ |
