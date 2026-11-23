@@ -22,7 +22,7 @@ las divide en tareas y se las reparte. Las fechas y el avance se respaldan con e
 | 4 | 29/09 – 12/10 | Fase 2 | Incorporar la retroalimentación del docente y empezar la reescritura | 5 | 5 |
 | 5 | 13/10 – 26/10 | Fase 2 | Reescritura completa como aplicación web, publicada en la nube | 80 | 80 |
 | 6 | 27/10 – 09/11 | Fase 2 → 3 | Cuentas y seguridad, reportes, Docker, pruebas y documentación | 41 | 41 |
-| 7 | 10/11 – 23/11 | Fase 3 | Cierre: pendientes, pruebas finales y presentación | 15 | 15 al 18/11 (en curso) |
+| 7 | 10/11 – 23/11 | Fase 3 | Cierre: pendientes, pruebas finales y presentación | 15 | 15 |
 | — | 24/11 – 01/12 | Fase 3 | Entrega final (01/12/2026): informe, presentación y demostración | — | — |
 
 > En los sprints 1 a 3 el trabajo fue de definición del proyecto y de una primera versión que luego se descartó,
@@ -112,7 +112,7 @@ las divide en tareas y se las reparte. Las fechas y el avance se respaldan con e
 | — | Marco de clasificación de datos (OE5) y entregas ordenadas por fase (05/11 – 06/11) | EF | — | ✅ |
 | | | **Total** | **41** | |
 
-## Sprint 7 — Cierre (10/11 – 23/11) · *sprint actual*
+## Sprint 7 — Cierre (10/11 – 23/11)
 
 **Objetivo:** terminar los pendientes y preparar la presentación final.
 
@@ -124,10 +124,28 @@ las divide en tareas y se las reparte. Las fechas y el avance se respaldan con e
 | — | RNF-18: el escaneo de archivos corre en un hilo aparte y no bloquea a los demás usuarios (18/11) | EF | — | ✅ |
 | — | Documento de diseño, escalabilidad y pruebas por sprint (16/11) | MC, EF | — | ✅ |
 | — | Retrospectiva del sprint 6 (18/11) | MC | — | ✅ |
-| — | Prueba con la base del cliente simulado en Neon | EF | — | ⏳ |
-| — | Informe final, presentación y ensayo | Todo el equipo | — | ⏳ |
-| — | Pruebas de aceptación con un usuario externo (PR-24 a PR-26) | Todo el equipo | — | ⏳ |
-| — | Retrospectiva del sprint 7 (23/11) | Todo el equipo | — | ⏳ |
+| — | Presentación del examen final (15 min), guion por integrante y datos de la demo (22/11) | Todo el equipo | — | ✅ |
+| — | Retrospectiva del sprint 7 (23/11) | Todo el equipo | — | ✅ |
+| — | Prueba con la base del cliente simulado en Neon | EF | — | ⏳ → entrega final |
+| — | Alinear el marco de clasificación con la política de Duoc UC (OE5) | EF | — | ⏳ → entrega final |
+| — | Pruebas de aceptación con un usuario externo (PR-24 a PR-26) | Todo el equipo | — | ⏳ → entrega final |
+| — | Informe final | Todo el equipo | — | 🔄 → entrega final |
+
+Las 15 historias planificadas para el sprint quedaron terminadas. Las tareas sin historia que no se alcanzaron pasan
+a la semana de entrega final.
+
+## Entrega final (24/11 – 01/12)
+
+**Objetivo:** cerrar los pendientes del sprint 7 y entregar el proyecto.
+
+| Tarea | Responsable | Estado |
+|---|---|---|
+| Prueba con la base del cliente simulado en Neon (antes del ensayo) | EF | ⏳ |
+| Alinear el marco de clasificación con la política de Duoc UC: tabla de equivalencia de niveles (OE5) | EF | ⏳ |
+| Pruebas de aceptación con un usuario externo (PR-24 a PR-26) | Todo el equipo | ⏳ |
+| Informe final (`Fase 3/Grupal/`) | Todo el equipo | 🔄 |
+| Presentación final en `.pptx` (`Fase 3/Grupal/`) y ensayo con cronómetro | Todo el equipo | ⏳ |
+| Diario de reflexión y autoevaluación de la Fase 3 (`Fase 3/Individual/`) | Cada integrante | ⏳ |
 
 ---
 
@@ -211,7 +229,7 @@ usuarios de GitHub de cada integrante (Fruna1, Emanuel2234, Martin1421cl) aparec
 | 06/11 | EF | `a3552a6` Organizar entregas de la Fase 2 en la carpeta Fase 2 | Entregas por fase |
 | 06/11 | EF | `122ae94` Marco de clasificación: plan de alineación con la política de Duoc UC | Documentación (OE5) |
 
-### Sprint 7 (10/11 – 23/11) · en curso
+### Sprint 7 (10/11 – 23/11)
 
 | Fecha | Integrante | Commit | Historia / aporte |
 |---|---|---|---|
@@ -221,9 +239,19 @@ usuarios de GitHub de cada integrante (Fruna1, Emanuel2234, Martin1421cl) aparec
 | 16/11 | MC | `b2ccc6f` Requisitos no funcionales: escalabilidad | RNF-17, RNF-18 |
 | 18/11 | MC | `4c9defe` HU-27: lectura determinista de tablas (ORDER BY por llave primaria) y sus pruebas | HU-27 |
 | 18/11 | MC | `abff88e` Documentación: HU-27 terminada (RNF-08 cumplido, 240 pruebas) | HU-27 |
+| 18/11 | MC | `f176be6` HU-27: lectura determinista de tablas (ORDER BY por llave primaria) y sus pruebas | HU-27 (subida corregida) |
+| 18/11 | MC | `2c95508` Documentación: HU-27 terminada (RNF-08 cumplido, 240 pruebas) | HU-27 (subida corregida) |
+| 18/11 | MC | `a009985` HU-27: mover el código, las pruebas y la documentación a su lugar | HU-27 |
+| 18/11 | MC | `0b7d22e` Retrospectiva del sprint 6 | Retrospectiva |
+| 18/11 | CF | `a5634f4` HU-29: guardar los hallazgos por lotes para escanear archivos grandes con poca memoria | HU-29 |
+| 18/11 | EF | `6c18b2b` RNF-18: escanear archivos en un hilo aparte para no bloquear a los demás usuarios | RNF-18 |
+| 18/11 | EF | `1798bea` HU-17: comparar dos escaneos (API y pruebas) | HU-17 |
+| 18/11 | EF | `1a154ab` HU-17: página para comparar escaneos y enlace desde el historial | HU-17 |
+| 18/11 | EF | `beff3da` Documentación del sprint 7: HU-17, HU-29 y RNF-18 terminadas, backlogs al día y 257 pruebas | Documentación |
 
-> Los commits que siguen a `abff88e` (arreglo de HU-27, retrospectiva del sprint 6, HU-29, RNF-18 y HU-17) se
-> agregan a esta tabla al cierre del sprint (23/11), junto con la retrospectiva del sprint 7.
+> HU-27 aparece dos veces porque la primera subida quedó dentro de la carpeta del zip; se volvió a subir y se movió
+> a su lugar (`a009985`), como se registra en la retrospectiva del sprint 7. Los commits de cierre del sprint
+> (retrospectiva y backlogs, 23/11) se suman en la entrega final.
 
 ### Commits por sprint e integrante
 
@@ -234,8 +262,8 @@ usuarios de GitHub de cada integrante (Fruna1, Emanuel2234, Martin1421cl) aparec
 | 4 | 3 | 1 | 0 | 4 |
 | 5 | 20 | 2 | 0 | 22 |
 | 6 | 3 | 10 | 7 | 20 |
-| 7 (hasta `abff88e`) | 0 | 1 | 5 | 6 |
-| **Total** | **26** | **15** | **14** | **55** |
+| 7 | 1 | 5 | 9 | 15 |
+| **Total** | **27** | **19** | **18** | **64** |
 
 > Varias entregas se subieron desde la web de GitHub (*Add files via upload*) y la primera versión se subió en
 > bloque, por eso hay sprints con pocos commits. Desde el sprint 6 el equipo acordó hacer commits por tarea terminada

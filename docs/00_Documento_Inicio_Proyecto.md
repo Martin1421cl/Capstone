@@ -142,7 +142,8 @@ reportes que alimenten sistemas DLP.
 | Fase 2 – Avance | 16/10/2026 – 30/10/2026 | Informe 2.3, guías 2.4 y 2.6, diario 2.1, ERS, casos de uso, SAD 4+1 |
 | Cuentas y seguridad | 28/10/2026 | Login con roles, recuperación, bitácora, exportación, revisión |
 | Documentación y Docker | Sprint 6 (hasta 09/11/2026) | Artefactos ágiles, diagramas, plan de pruebas, manual técnico, Docker |
-| Cierre del desarrollo | Sprint 7 (hasta 23/11/2026) | Pendientes (HU-17, HU-27, HU-29), pruebas de aceptación y ensayo |
+| Cierre del desarrollo | Sprint 7 (hasta 23/11/2026) | HU-17, HU-27 y HU-29 terminadas: 29 de 29 historias y 257 pruebas automáticas |
+| Semana de entrega | 24/11/2026 – 01/12/2026 | Marco de clasificación alineado con Duoc UC (OE5), pruebas de aceptación, informe final y ensayo |
 | **Fase 3 – Entrega final** | **01/12/2026** | Informe final, presentación y demostración en vivo |
 
 ## 10. Registro de decisiones del proyecto

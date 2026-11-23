@@ -103,19 +103,20 @@ En un PC lento, los umbrales de rendimiento se pueden relajar con `KSECURE_FACTO
 | PR-20 | CSV de 2.000 filas (12.000 celdas) por la API | RNF-05 | < 30 s | 1,1 s (≈ 1.800 filas/s) | ✅ |
 | PR-21 | Texto de 1,4 MB sin datos sensibles | — | < 15 s y 0 falsos positivos | 0,2 s, 0 hallazgos | ✅ |
 | PR-22 | 5.000 RUT con el validador | RNF-05 | < 10 s | 0,4 s | ✅ |
-| PR-23 | Tabla de 100.000 filas | RNF-06 | ≤ 60 s | 32 s (ERS) | ✅ |
+| PR-23 | Tabla de 100.000 filas | RNF-06 | ≤ 60 s | 32 s (ERS); 29 s el 22/11/2026 con la versión final*** | ✅ |
 | PR-29 | CSV de 100.000 filas subido por la web | RNF-14 | < 1 GB de RAM | ~265 MB y ~28 s (antes ~2,1 GB y ~52 s)** | ✅ |
 | PR-30 | Otro usuario navega mientras corre un escaneo largo | RNF-18 | Responde sin esperar al escaneo | Responde de inmediato; sin el hilo aparte esperaba 1,2 s (`rendimiento/test_concurrencia.py`) | ✅ |
 
 \* Medido el 31/10/2026 en el entorno de desarrollo. \*\* Medido el 18/11/2026, antes y después de HU-29, en el
-mismo equipo (detalle en [Requisitos no funcionales](Requisitos_No_Funcionales.md), sección 1).
+mismo equipo (detalle en [Requisitos no funcionales](Requisitos_No_Funcionales.md), sección 1). \*\*\* Tabla SQLite de
+100.000 filas y 6 columnas (RUT, nombre, celular, correo y monto), escaneada con `escanear_bd`: 29,3 s y 300.000 hallazgos.
 
 ### 6.4 Aceptación (manual, con un usuario)
 
 | ID | Tarea para el usuario | Resultado esperado | Estado |
 |---|---|---|---|
 | PR-24 | Primer ingreso como Admin: crear clave de auditor y una cuenta Auditor | Lo logra sin ayuda en menos de 5 minutos | ⏳ |
-| PR-25 | Como Auditor, escanear la base demo en Neon | Identifica las 9 columnas sensibles | ⏳ |
+| PR-25 | Como Auditor, escanear la base del cliente simulado (Comercial Austral) en Neon | Encuentra las 11 columnas clave y no marca ninguna de las 6 trampas (lo mismo que verifica `test_cliente_simulado.py`) | ⏳ |
 | PR-26 | Crear una regla para "N° de socio" solo con ejemplos | La regla funciona sin escribir expresiones regulares | ⏳ |
 
 ## 7. Criterios de aceptación de la versión
