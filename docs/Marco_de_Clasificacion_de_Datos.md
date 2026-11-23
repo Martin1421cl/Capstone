@@ -4,7 +4,7 @@ Documento de la actividad **"Documentar marco de clasificación de datos"** del 
 objetivo específico OE5: definir los niveles de clasificación que usa K-Secure, qué dato cae en cada nivel y qué
 política de manejo corresponde.
 
-**Versión:** 1.0 · 31/10/2026 · Las reglas de este documento son las que aplica el código en
+**Versión:** 1.1 · 23/11/2026 (sección 6: alineación con la política de Duoc UC) · Las reglas de este documento son las que aplica el código en
 `k-secure-web/ksecure/validators/` y `ksecure/core/models.py`.
 
 ---
@@ -13,8 +13,11 @@ política de manejo corresponde.
 
 - **OEA y AWS (2019).** *Clasificación de Datos*, serie de white papers, edición 6. Organización de los Estados
   Americanos y Amazon Web Services. https://www.oas.org/ClasificacionDeDatos
-- **Política de Clasificación de Datos e Información de Duoc UC**, entregada por el docente como referencia.
-- **Ley 21.719** de protección de datos personales (Chile, publicada el 13/12/2024, vigente desde el 01/12/2026).
+- **Duoc UC (2024).** *Política de Clasificación de Datos e Información*, versión 1, aprobada el 16/10/2024. Dirección
+  de Gobierno de Datos y Análisis Institucional y Dirección General de Servicios Digitales. Entregada por el docente
+  como referencia.
+- **Ley 21.719** de protección de datos personales (Chile, publicada el 13/12/2024). Su vigencia estaba fijada para el
+  01/12/2026; en noviembre de 2026 el Congreso aprobó postergarla hasta octubre de 2027.
 - **PCI DSS** (Payment Card Industry Data Security Standard), para el tratamiento del número de tarjeta.
 - **ferret-scan** (AWS Labs, Apache 2.0), para las bandas de confianza. https://github.com/awslabs/ferret-scan
 
@@ -97,21 +100,74 @@ Cómo debe tratar la organización cliente la información de cada nivel, y cóm
 
 ## 6. Relación con la política de clasificación de Duoc UC
 
-La Guía 1.5 compromete alinear este marco con la **Política de Clasificación de Datos e Información de Duoc UC**,
-entregada por el docente como referencia. Esta alineación está **planificada para el sprint 7** y se hará así:
+La Guía 1.5 compromete alinear este marco con la **Política de Clasificación de Datos e Información de Duoc UC**
+(versión 1, octubre de 2024). Esta sección registra esa alineación.
 
-1. Identificar los niveles que define la política de Duoc UC y el criterio de cada uno (quién accede, impacto si se filtra).
-2. Asociar cada nivel de K-Secure (Público, Interno, Confidencial, Restringido) al nivel de la política con el impacto
-   equivalente, usando las definiciones de la sección 2 de este documento.
-3. Si la política usa una cantidad distinta de niveles, mantener los cuatro de K-Secure (siguiendo el criterio OEA/AWS de
-   la sección 1) e indicar cuál nivel de la política cubre a cada uno.
-4. Si algún tipo de dato cambia de nivel, ajustar su riesgo en el validador correspondiente y en la tabla de la sección 4.
+### 6.1 Qué define la política de Duoc UC
+
+La política responde a los controles 5.12 (clasificación) y 5.13 (etiquetado) de la ISO/IEC 27001 y clasifica la
+información en tres dimensiones (sección 8 de la política):
+
+| Dimensión | Niveles |
+|---|---|
+| **Confidencialidad** (8.1) | Pública · Interna · Confidencial · Reservada |
+| **Integridad** (8.2) | Baja · Media · Alta |
+| **Disponibilidad** (8.3) | Baja (hasta 48 h sin acceso) · Media (24 h) · Alta (6 h) |
+
+En confidencialidad, la política pone los **datos personales** (nombre, número de cédula, domicilio, teléfono, firma,
+correo electrónico, datos bancarios y dirección IP, entre otros) en **Confidencial**, y los **datos personales
+sensibles** (salud, origen racial, ideología, creencias, orientación sexual, identidad de género, datos genéticos y
+biomédicos, entre otros) en **Reservada**, junto con la información de la alta dirección.
+
+### 6.2 Alcance de la alineación
+
+K-Secure clasifica **confidencialidad**: su objetivo es decir qué datos son sensibles para que un DLP los proteja. La
+integridad y la disponibilidad dependen de cómo la organización usa cada sistema, no del contenido que se escanea, y
+quedan en manos del dueño de dominio, como indica la política (sección 5.3). Por eso la alineación se hace con los
+niveles de confidencialidad.
+
+### 6.3 Tabla de equivalencia
+
+| Nivel K-Secure | Nivel de la política de Duoc UC | Criterio común | Tipos de dato |
+|---|---|---|---|
+| **Público** | **Pública** (8.1.1) | Puede conocerla cualquier persona | Correos de rol (`contacto@`, `ventas@`) |
+| **Interno** | **Interna** (8.1.2) | Uso interno; filtración con impacto leve | Teléfono fijo de oficina, RUT de empresa, hallazgos con confianza LOW |
+| **Confidencial** | **Confidencial** (8.1.3) | Datos personales: solo quien los necesita para su trabajo | Celular, correo personal, patente |
+| **Restringido** | **Confidencial** (8.1.3), con un control más estricto | Datos personales cuya filtración permite fraude o suplantación | RUT de persona, tarjeta, cuenta bancaria |
+| **Restringido** | **Reservada** (8.1.4) | Filtración con impacto grave; acceso de un grupo muy reducido | Claves y tokens de acceso; reglas propias de datos sensibles, como la ficha clínica |
+
+**Decisión:** K-Secure mantiene sus **cuatro niveles**. Ningún tipo de dato queda con menos protección que la que
+exige la política, así que **no fue necesario cambiar el riesgo de ningún validador** (paso 4 del plan). La diferencia
+es intencional: la política agrupa todos los datos personales en Confidencial, mientras que K-Secure separa en
+Restringido los que permiten fraude o suplantación (RUT de persona, tarjeta y cuenta bancaria), siguiendo el criterio
+de impacto del white paper OEA/AWS y de PCI DSS. Para quien use la política de Duoc UC, todo hallazgo Restringido
+debe tratarse **al menos** como Confidencial, y como Reservado cuando se trate de claves de acceso o datos sensibles.
+
+### 6.4 Brechas encontradas
+
+La política nombra datos personales que K-Secure **no detecta hoy** con sus validadores incluidos:
+
+| Dato según la política | Nivel en la política | Situación en K-Secure | Cómo cubrirlo |
+|---|---|---|---|
+| Nombre y domicilio | Confidencial | No se detectan: no tienen un formato verificable | Regla propia con palabras de contexto, o revisión del dueño de dominio |
+| Dirección IP | Confidencial | No se detecta; en el cliente simulado, una columna de IP es una «trampa» que no se marca | Regla propia de nivel Confidencial si la organización la considera dato personal |
+| Datos personales sensibles (salud, creencias, etc.) | Reservada | Solo con reglas propias (la plantilla «Ficha clínica» ya viene con nivel Restringido) | Reglas propias de nivel Restringido |
+
+### 6.5 Etiquetado y manejo (secciones 9 y 10 de la política)
+
+| Exigencia de la política | Cómo la apoya K-Secure |
+|---|---|
+| Clasificar y etiquetar los activos al incorporarlos al inventario (9) | Cada escaneo deja un inventario con el nivel de cada archivo, tabla y columna, que el dueño de dominio usa para etiquetar |
+| Revisión periódica de la clasificación (9) | El historial y la comparación de escaneos muestran qué cambió entre una revisión y la siguiente |
+| Restricciones de acceso coherentes con la clasificación (10.1) | Roles Admin, Auditor y Visor; el Visor solo ve valores enmascarados |
+| Registro de quienes acceden (10.2) | Bitácora: cada vez que alguien ve un original queda registrado quién, cuándo y desde qué IP |
+| Copias con la misma clasificación que el original (10.6) | Las exportaciones (CSV, JSON y PDF) solo llevan valores enmascarados |
 
 | | |
 |---|---|
-| **Estado** | Pendiente (sprint 7) |
+| **Estado** | Terminado (23/11/2026) |
 | **Responsable** | Emanuel Farías |
-| **Resultado** | Tabla de equivalencia K-Secure ↔ política de Duoc UC, agregada en esta sección |
+| **Resultado** | Tabla de equivalencia K-Secure ↔ política de Duoc UC (6.3), brechas (6.4) y relación con el etiquetado y manejo (6.5) |
 
 ---
 

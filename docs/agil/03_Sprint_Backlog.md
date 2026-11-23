@@ -141,7 +141,7 @@ a la semana de entrega final.
 | Tarea | Responsable | Estado |
 |---|---|---|
 | Prueba con la base del cliente simulado en Neon (antes del ensayo) | EF | ⏳ |
-| Alinear el marco de clasificación con la política de Duoc UC: tabla de equivalencia de niveles (OE5) | EF | ⏳ |
+| Alinear el marco de clasificación con la política de Duoc UC: tabla de equivalencia de niveles (OE5, 23/11) | EF | ✅ |
 | Pruebas de aceptación con un usuario externo (PR-24 a PR-26) | Todo el equipo | ⏳ |
 | Informe final (`Fase 3/Grupal/`) | Todo el equipo | 🔄 |
 | Presentación final en `.pptx` (`Fase 3/Grupal/`) y ensayo con cronómetro | Todo el equipo | ⏳ |

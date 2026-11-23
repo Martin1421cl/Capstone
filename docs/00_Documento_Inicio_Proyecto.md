@@ -63,7 +63,7 @@ reportes que alimenten sistemas DLP.
 | OE2 | Implementar la lógica de detección combinando expresiones regulares y Módulo 11 para reducir falsos positivos | 7 validadores con confianza 0–100 y análisis de contexto | ✅ |
 | OE3 | Desarrollar un módulo de reportes clasificados por nivel de riesgo | Resultados por riesgo y tipo; exportación CSV, JSON y PDF | ✅ |
 | OE4 | Probar el sistema con pruebas iterativas y distintos conjuntos de datos | 235 pruebas automáticas y base de cliente simulado ([`Plan_de_Pruebas.md`](Plan_de_Pruebas.md)) | ✅ |
-| OE5 | Documentar los niveles de clasificación y políticas de manejo (whitepaper OEA/AWS y política de Duoc UC) | [`Marco_de_Clasificacion_de_Datos.md`](Marco_de_Clasificacion_de_Datos.md) | 🔄 |
+| OE5 | Documentar los niveles de clasificación y políticas de manejo (whitepaper OEA/AWS y política de Duoc UC) | [`Marco_de_Clasificacion_de_Datos.md`](Marco_de_Clasificacion_de_Datos.md) | ✅ |
 | OE6 | Integrar el motor y los reportes en un flujo único de extremo a extremo | Aplicación web: subir o conectar → escanear → revisar → exportar | ✅ |
 | OE7 | Planificar y controlar el avance con checkpoints periódicos | Sprints de 2 semanas, Sprint Backlog y retrospectivas ([`agil/`](agil/)) | ✅ |
 
@@ -143,7 +143,7 @@ reportes que alimenten sistemas DLP.
 | Cuentas y seguridad | 28/10/2026 | Login con roles, recuperación, bitácora, exportación, revisión |
 | Documentación y Docker | Sprint 6 (hasta 09/11/2026) | Artefactos ágiles, diagramas, plan de pruebas, manual técnico, Docker |
 | Cierre del desarrollo | Sprint 7 (hasta 23/11/2026) | HU-17, HU-27 y HU-29 terminadas: 29 de 29 historias y 257 pruebas automáticas |
-| Semana de entrega | 24/11/2026 – 01/12/2026 | Marco de clasificación alineado con Duoc UC (OE5), pruebas de aceptación, informe final y ensayo |
+| Semana de entrega | 24/11/2026 – 01/12/2026 | Marco de clasificación alineado con Duoc UC (OE5, terminado el 23/11), pruebas de aceptación, informe final y ensayo |
 | **Fase 3 – Entrega final** | **01/12/2026** | Informe final, presentación y demostración en vivo |
 
 ## 10. Registro de decisiones del proyecto
