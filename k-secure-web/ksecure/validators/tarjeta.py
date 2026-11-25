@@ -70,6 +70,7 @@ def _agrupacion_valida(raw: str) -> bool:
 
 class TarjetaValidator(Validator):
     name = "TARJETA_PAGO"
+    min_digitos = 13  # filtro rápido por celda (ver Validator.puede_estar_en)
     positive_keywords = (
         "tarjeta", "card", "credito", "debito", "visa", "mastercard", "amex", "redcompra", "webpay", "cvv", "cvc",
         "vencimiento", "venc", "pago", "titular", "cuotas",

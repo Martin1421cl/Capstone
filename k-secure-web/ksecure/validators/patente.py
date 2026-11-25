@@ -20,6 +20,8 @@ _PATENTE_PATTERN = re.compile(
 
 class PatenteValidator(Validator):
     name = "PATENTE"
+    min_digitos = 2  # filtro rápido por celda (ver Validator.puede_estar_en)
+    prefiltro = re.compile(r"[A-Z]{2}")  # toda patente empieza con dos letras mayúsculas
     positive_keywords = (
         "patente", "ppu", "placa", "vehiculo", "auto", "automovil", "camioneta", "moto",
         "permiso de circulacion", "revision tecnica", "multa", "tag", "estacionamiento",

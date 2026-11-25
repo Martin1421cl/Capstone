@@ -17,6 +17,8 @@ _PATRONES = [
 
 class SecretoValidator(Validator):
     name = "SECRETO"
+    # Cada patrón exige una de estas marcas: sin ninguna, no hay secreto que buscar.
+    prefiltro = re.compile(r"A(?:KIA|SIA|BIA|CCA)|(?i:secret)|gh[pousr]_|-----BEGIN")
 
     def find_candidates(self, line):
         for tipo, patron, confianza in _PATRONES:

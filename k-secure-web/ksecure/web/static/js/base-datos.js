@@ -85,7 +85,7 @@ $("escanear").addEventListener("click", async () => {
   const cerrar = mostrarEscaneando(`Revisando ${tablas.length} tabla${tablas.length === 1 ? "" : "s"} de ${conexion.base}`);
   try {
     const { escaneo_id } = await api("/bd/escanear", {
-      method: "POST", json: { conexion, tablas, max_filas: Number($("max-filas").value) },
+      method: "POST", json: { conexion, tablas },
     });
     location.href = `/resultados.html?id=${escaneo_id}`;
   } catch (e) {

@@ -55,15 +55,7 @@
           <label style="display:flex;gap:8px;align-items:center;margin:0"><input type="checkbox" id="todas" checked> Todas</label>
         </div>
         <div class="tablas" id="tablas"></div>
-        <div class="campo" style="max-width:260px">
-          <label for="max-filas">Filas a revisar por tabla</label>
-          <select id="max-filas">
-            <option value="100">100 (rápido)</option>
-            <option value="1000" selected>1.000</option>
-            <option value="10000">10.000</option>
-            <option value="100000">100.000 (lento)</option>
-          </select>
-        </div>
+        <p class="muted" style="margin:4px 0 16px">Se revisan todas las filas de cada tabla marcada, en solo lectura.</p>
         <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap">
           <button class="btn" type="button" id="volver-2">← Cambiar conexión</button>
           <button class="btn btn-primary" type="button" id="escanear">Escanear</button>

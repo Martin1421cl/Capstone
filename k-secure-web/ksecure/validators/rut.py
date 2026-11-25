@@ -39,6 +39,8 @@ def es_rut_de_ejemplo(cuerpo: str) -> bool:
 
 class RutValidator(Validator):
     name = "RUT"
+    min_digitos = 1  # filtro rápido por celda (ver Validator.puede_estar_en)
+    prefiltro = re.compile(r"[-‐–]")  # el patrón exige el guion antes del dígito verificador
     positive_keywords = (
         "rut", "run", "cedula", "identidad", "identificacion", "cliente", "paciente",
         "titular", "contribuyente", "empleado", "trabajador", "alumno", "beneficiario",

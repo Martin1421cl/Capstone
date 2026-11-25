@@ -31,6 +31,7 @@ _DRIVERS = {
     "oracle": "oracle+oracledb",
 }
 _TIMEOUT = 10  # segundos para conectarse
+_DE_A = 2000   # filas que se traen del servidor de a una vez: la tabla completa nunca queda entera en memoria
 
 
 class ConexionError(Exception):
@@ -119,23 +120,30 @@ def _posicion(fila, clave: list[str], numero: int) -> str:
     return f"fila {numero}"
 
 
-def _consulta(tabla: Table, clave: list[str], max_filas: int, ordenar: bool = True):
+def _consulta(tabla: Table, clave: list[str], max_filas: int | None, ordenar: bool = True):
     """SELECT con orden fijo (HU-27 / RNF-08): el mismo escaneo lee siempre las mismas filas.
 
     Se ordena por la llave primaria; si la tabla no tiene, por todas sus columnas.
     Sin ORDER BY, una tabla más grande que el límite puede devolver filas distintas cada vez.
+    max_filas None = la tabla completa.
     """
     q = select(tabla)
     if ordenar:
         q = q.order_by(*(tabla.c[k] for k in clave) if clave else tabla.c)
-    return q.limit(max_filas)
+    return q if max_filas is None else q.limit(max_filas)
 
 
-def escanear_bd(engine: Engine, descripcion: str, max_filas: int = 1000,
+def _leer(conn, consulta):
+    """Trae las filas de a _DE_A (cursor del lado del servidor en PostgreSQL, MySQL y Oracle)."""
+    return conn.execution_options(stream_results=True, yield_per=_DE_A).execute(consulta).mappings()
+
+
+def escanear_bd(engine: Engine, descripcion: str, max_filas: int | None = None,
                 tablas: list[str] | None = None, validators: list[Validator] | None = None,
                 resultado: ResultadoEscaneo | None = None) -> ResultadoEscaneo:
     """Pasa cada celda por los validadores, usando el nombre de su columna como contexto.
 
+    Por defecto revisa todas las tablas y todas sus filas; max_filas pone un tope por tabla.
     resultado: uno ya creado con `al_lote` para guardar los hallazgos por lotes (HU-29).
     """
     resultado = resultado or ResultadoEscaneo("bd", descripcion)
@@ -151,7 +159,7 @@ def escanear_bd(engine: Engine, descripcion: str, max_filas: int = 1000,
             ordenar = True
             with engine.connect() as conn:
                 try:
-                    filas = conn.execute(_consulta(tabla, clave, max_filas)).mappings()
+                    filas = _leer(conn, _consulta(tabla, clave, max_filas))
                 except Exception:
                     # Algunos motores no ordenan ciertos tipos (ej. TEXT en SQL Server, CLOB en Oracle):
                     # en una tabla sin llave primaria se lee sin orden y se avisa.
@@ -163,7 +171,7 @@ def escanear_bd(engine: Engine, descripcion: str, max_filas: int = 1000,
                                    ((_posicion(f, clave, n), f) for n, f in enumerate(filas, start=1)), validators)
             if not ordenar:
                 with engine.connect() as conn:  # conexión nueva: en PostgreSQL la anterior quedó abortada
-                    filas = conn.execute(_consulta(tabla, clave, max_filas, ordenar=False)).mappings()
+                    filas = _leer(conn, _consulta(tabla, clave, max_filas, ordenar=False))
                     escanear_filas(resultado, nombre,
                                    ((_posicion(f, clave, n), f) for n, f in enumerate(filas, start=1)), validators)
                 resultado.errores.append(f"{nombre}: sin llave primaria ordenable; "

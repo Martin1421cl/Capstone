@@ -10,6 +10,7 @@ import unicodedata
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
 from dataclasses import dataclass, field
+from functools import lru_cache
 
 from ksecure.core.models import ContextInfo, Match, RiskLevel
 
@@ -20,14 +21,24 @@ _NEGATIVO, _NEGATIVO_MAX = 20, 40
 
 def normalize(text: str) -> str:
     """Minúsculas y sin tildes, para que "cédula" y "cedula" sean lo mismo."""
+    if text.isascii():  # lo más común en una celda: no hay tildes que quitar
+        return text.lower()
     decomposed = unicodedata.normalize("NFD", text.lower())
     return "".join(c for c in decomposed if unicodedata.category(c) != "Mn")
 
 
+@lru_cache(maxsize=256)
+def _patrones(keywords: tuple[str, ...]) -> tuple[tuple[str, re.Pattern], ...]:
+    """Cada palabra clave compilada una sola vez (antes se armaba la expresión en cada celda)."""
+    return tuple((kw, re.compile(rf"(?<!\w){re.escape(normalize(kw))}(?!\w)")) for kw in keywords)
+
+
 def find_keywords(text: str, keywords: tuple[str, ...]) -> list[str]:
     """Palabras clave presentes en text como palabra completa ("rut" no calza en "Ruta")."""
+    if not keywords:
+        return []
     norm = normalize(text)
-    return [kw for kw in keywords if re.search(rf"(?<!\w){re.escape(normalize(kw))}(?!\w)", norm)]
+    return [kw for kw, patron in _patrones(tuple(keywords)) if patron.search(norm)]
 
 
 @dataclass
@@ -42,6 +53,7 @@ class Candidate:
     requires_context: bool = False
 
 
+@lru_cache(maxsize=4096)
 def split_identifier(name: str) -> str:
     """Nombre de columna a palabras: "rut_cliente" / "rutCliente" -> "rut cliente"."""
     return re.sub(r"[_\-.]+|(?<=[a-z])(?=[A-Z])", " ", name)
@@ -68,6 +80,16 @@ class Validator(ABC):
     context_window: int = 50
     # Para datos sin formato propio (ej. cuentas bancarias): sin palabra clave positiva no se reporta.
     requires_context: bool = False
+    # Filtro rápido para celdas cortas: si el valor no tiene al menos estos dígitos (o este carácter),
+    # el dato no puede estar ahí y no hace falta buscarlo. 0 / None = sin filtro.
+    min_digitos: int = 0
+    requiere: str | None = None
+    prefiltro: re.Pattern | None = None  # algo que el texto tiene que contener sí o sí
+
+    def puede_estar_en(self, texto: str, digitos: int) -> bool:
+        """digitos: cuántos dígitos 0-9 tiene texto (se calcula una vez por celda)."""
+        return (digitos >= self.min_digitos and (self.requiere is None or self.requiere in texto)
+                and (self.prefiltro is None or self.prefiltro.search(texto) is not None))
 
     @abstractmethod
     def find_candidates(self, line: str) -> Iterable[Candidate]:
@@ -83,10 +105,12 @@ class Validator(ABC):
 
     def validate_content(self, content: str, filename: str, context_hint: str = "") -> list[Match]:
         """Busca el dato en content. context_hint es contexto extra, como el nombre de la columna en una BD."""
-        hint = split_identifier(context_hint)
+        hint = None  # se arma solo si aparece un candidato (lo normal en una celda es que no haya ninguno)
         matches = []
         for line_number, line in enumerate(content.splitlines(), start=1):
             for c in self.find_candidates(line):
+                if hint is None:
+                    hint = split_identifier(context_hint)
                 context = self.extract_context(line, c.start, c.end, hint)
                 if (self.requires_context or c.requires_context) and not context.positive_keywords:
                     continue

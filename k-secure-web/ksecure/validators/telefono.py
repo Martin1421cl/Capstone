@@ -31,6 +31,7 @@ def formatear(digitos: str) -> str:
 
 class TelefonoValidator(Validator):
     name = "TELEFONO"
+    min_digitos = 8  # filtro rápido por celda (ver Validator.puede_estar_en)
     positive_keywords = (
         "telefono", "fono", "tel", "celular", "cel", "movil", "whatsapp", "contacto",
         "llamar", "numero de contacto",

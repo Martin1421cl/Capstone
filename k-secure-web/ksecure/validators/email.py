@@ -19,6 +19,7 @@ _CUENTAS_DE_ROL = {
 
 class EmailValidator(Validator):
     name = "EMAIL"
+    requiere = "@"  # filtro rápido por celda (ver Validator.puede_estar_en)
     positive_keywords = ("correo", "email", "e-mail", "mail", "contacto", "escribir a")
 
     def find_candidates(self, line):

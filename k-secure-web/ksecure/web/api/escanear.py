@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from ksecure.almacenamiento import reglas
@@ -85,8 +85,7 @@ class Conexion(BaseModel):
 
 class PedidoEscaneoBD(BaseModel):
     conexion: Conexion
-    tablas: list[str] | None = None
-    max_filas: int = Field(1000, ge=1, le=100_000)
+    tablas: list[str] | None = None  # siempre se revisan completas: todas sus filas
 
 
 def _conectar(c: Conexion):
@@ -123,7 +122,7 @@ def escanear_base(pedido: PedidoEscaneoBD, request: Request, db: Session = Depen
         validadores = reglas.validadores_activos(db)
         resultado = _escanear_y_guardar(
             db, "bd", descripcion,
-            lambda r: escanear_bd(engine, descripcion, pedido.max_filas, pedido.tablas, validadores, r))
+            lambda r: escanear_bd(engine, descripcion, None, pedido.tablas, validadores, r))
     finally:
         engine.dispose()
     tablas = len(resultado.filas_por_fuente)

@@ -46,7 +46,8 @@ El script `demo/cliente_simulado.py` la crea en **Neon** (PostgreSQL en la nube)
    | Usuario | `ksecure_lector` |
    | Contraseña | la que pusiste en `--lector-clave` |
 
-   Con **Probar conexión** deben aparecer las 11 tablas. Para revisarlas completas elige 10.000 filas por tabla.
+   Con **Probar conexión** deben aparecer las 11 tablas, todas marcadas. K-Secure siempre las revisa completas,
+   con todas sus filas.
 
 `ksecure_lector` es el mismo tipo de usuario que se le pide a un cliente real: solo puede hacer `SELECT`.
 Si intenta escribir, PostgreSQL responde "permission denied".
@@ -62,8 +63,9 @@ Si intenta escribir, PostgreSQL responde "permission denied".
 
 ## Qué debería encontrar K-Secure
 
-Medido el 26 de octubre de 2026 con `--escala 1`, PostgreSQL y 100.000 filas por tabla:
-**15.304 hallazgos en 21 columnas, en unos 5 segundos**.
+Medido el 25 de noviembre de 2026 con `--escala 1`, PostgreSQL y las tablas completas (18.242 filas):
+**15.304 hallazgos en 21 columnas, en poco más de 1 segundo** (antes de la optimización, unos 6 segundos).
+Con `--escala 5` (91.162 filas): 76.448 hallazgos en unos 5 segundos (antes, 29 segundos).
 
 | Columna | Resultado |
 |---|---|

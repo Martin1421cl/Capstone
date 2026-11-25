@@ -19,6 +19,7 @@ _FORMA_DE_FECHA = re.compile(r"\d{4}-\d{2}-\d{2}|\d{2}-\d{2}-\d{4}")
 
 class CuentaBancariaValidator(Validator):
     name = "CUENTA_BANCARIA"
+    min_digitos = 2  # filtro rápido por celda (ver Validator.puede_estar_en)
     requires_context = True
     positive_keywords = (
         "cuenta", "cta", "cte", "corriente", "vista", "ahorro", "cuenta rut", "chequera electronica",
