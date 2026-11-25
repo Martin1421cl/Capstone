@@ -94,7 +94,7 @@ con `pip` (Oracle en modo *thin*, sin Oracle Client).
 | Framework web | FastAPI |
 | Frontend | HTML, CSS y JavaScript sin frameworks |
 | Control de versiones | Git + GitHub (`Martin1421cl/Capstone`) |
-| Pruebas | pytest (257 pruebas automáticas) |
+| Pruebas | pytest (267 pruebas automáticas) |
 | Base de datos de pruebas | SQLite en memoria; PostgreSQL en Neon y en Docker para la demo |
 | Despliegue | Render (app) + Neon (PostgreSQL), región AWS us-east-2; Docker Compose para servidor propio |
 | Diagramas | Mermaid (en el repositorio) |
@@ -123,7 +123,7 @@ Resumen de los RNF de la ERS más los de infraestructura de este documento.
 | RNF-08 | Determinismo | Mismo escaneo, mismo resultado | `ORDER BY` por llave primaria al leer tablas (HU-27) | ✅ |
 | RNF-09 | Usabilidad | Interfaz en español; reglas sin expresiones regulares | Prueba con usuario | ✅ |
 | RNF-10 | Portabilidad | Corre en cualquier sistema con Python 3.11+ o Docker | Render, Docker y local | ✅ |
-| RNF-11 | Mantenibilidad | Pruebas automáticas que cubren el sistema | 257 pruebas, todas pasan | ✅ |
+| RNF-11 | Mantenibilidad | Pruebas automáticas que cubren el sistema | 267 pruebas, todas pasan | ✅ |
 | RNF-12 | Seguridad | Contraseñas con bcrypt y sesiones que expiran | 30 min de inactividad, 12 h máximo | ✅ |
 | RNF-13 | Capacidad | Servidor mínimo 1 vCPU / 1 GB RAM; recomendado 2 vCPU / 4 GB | Medición de memoria (sección 1) | ✅ |
 | RNF-14 | Capacidad | Escanear un archivo de 100.000 filas sin superar 1 GB de RAM | Medido: ~265 MB (HU-29, sección 1) | ✅ |
@@ -144,7 +144,7 @@ Cómo crece K-Secure cuando aumentan los usuarios, los escaneos o el tamaño de 
 |---|---|---|
 | **Estado de la aplicación** | Sesiones, cuentas, reglas, llaves de la bóveda y bitácora se guardan en la base de datos, no en la memoria del servidor | Correr **varias instancias** de la app detrás de un balanceador de carga, todas contra la misma base PostgreSQL, y reiniciar la app sin cerrar sesiones |
 | **Base de datos** | PostgreSQL (Neon en la nube o el contenedor `db` en Docker), con índices en `hallazgos.tipo`, `hallazgos.riesgo`, `hallazgos.revision` y `bitacora.fecha` | Filtros rápidos con miles de hallazgos; Neon permite subir de plan sin cambiar código |
-| **Tamaño de cada escaneo** | Límite de 100 MB por archivo y de 1.000, 10.000 o 100.000 filas por tabla | Un escaneo no puede consumir recursos sin límite |
+| **Tamaño de cada escaneo** | Límite de 100 MB por archivo. Las tablas se revisan siempre completas, leídas desde el servidor de a 2.000 filas | Revisar bases grandes completas sin que la memoria crezca con el tamaño de la tabla |
 | **Nuevos tipos de dato** | Cada tipo es un validador independiente; las reglas se crean desde la pantalla | Crecer en cobertura sin tocar el motor |
 | **Despliegue** | Imagen Docker configurada por variables de entorno | Levantar más instancias en cualquier servidor u orquestador |
 | **Memoria por escaneo** (HU-29) | Los hallazgos se guardan en la base de a 2.000 mientras se escanea | La memoria no crece con la cantidad de hallazgos: ~265 MB para 100.000 filas |

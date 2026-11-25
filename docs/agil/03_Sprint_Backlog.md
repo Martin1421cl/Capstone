@@ -141,6 +141,8 @@ a la semana de entrega final.
 | Tarea | Responsable | Estado |
 |---|---|---|
 | Prueba con la base del cliente simulado en Neon (antes del ensayo) | EF | ⏳ |
+| Escaneo de bases de datos siempre completo: todas las tablas y todas las filas, leídas de a 2.000; se quita el tope de filas de la pantalla | CF | ✅ |
+| Optimizar la velocidad del motor: misma detección, ~5 veces más rápido en bases de datos (cliente simulado: 6,1 s → 1,2 s; PR-23: 32 s → 11 s) | CF | ✅ |
 | Alinear el marco de clasificación con la política de Duoc UC: tabla de equivalencia de niveles (OE5, 23/11) | EF | ✅ |
 | Pruebas de aceptación con un usuario externo (PR-24 a PR-26) | Todo el equipo | ⏳ |
 | Informe final (`Fase 3/Grupal/`) | Todo el equipo | 🔄 |

@@ -48,7 +48,7 @@ Fuentes: `03 - Especificación de Requerimientos de Software (ERS).docx`, `04 - 
 | RNF-08 | Determinismo | Mismo escaneo, mismo resultado | HU-27 | `ORDER BY` por llave primaria (o por todas las columnas) en `escaneo/bases_datos.py` | ✅ |
 | RNF-09 | Usabilidad | Interfaz en español; reglas sin expresiones regulares | HU-18 | Prueba con usuario (Plan de pruebas PR-24 a PR-26) | ✅ |
 | RNF-10 | Portabilidad | Python 3.11+ en local, nube o Docker | HU-24, HU-25 | Render, Docker Compose y local | ✅ |
-| RNF-11 | Mantenibilidad | Pruebas automáticas | HU-26 | 257 pruebas con pytest | ✅ |
+| RNF-11 | Mantenibilidad | Pruebas automáticas | HU-26 | 267 pruebas con pytest | ✅ |
 | RNF-12 | Seguridad | Contraseñas con bcrypt; sesiones que expiran | HU-20 | `test_sesion.py` | ✅ |
 | RNF-13 | Capacidad | Servidor mínimo 1 vCPU / 1 GB; recomendado 2 vCPU / 4 GB | — | [`Requisitos_No_Funcionales.md`](Requisitos_No_Funcionales.md) | ✅ |
 | RNF-14 | Capacidad | Archivo de 100.000 filas con menos de 1 GB de RAM | HU-29 | Medido: ~265 MB (antes ~2,1 GB) · `test_lotes.py` | ✅ |

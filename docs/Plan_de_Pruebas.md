@@ -26,12 +26,12 @@ la versión final.
 
 | Tipo | Qué verifica | Herramienta | Dónde está | N.º de pruebas |
 |---|---|---|---|---|
-| **Unitarias** | Cada validador (RUT con Módulo 11, Luhn, teléfonos, patentes...), preprocesadores, reglas, enmascarado, lectura determinista de tablas, guardado por lotes, comparar escaneos | pytest | `tests/test_*.py` | 231 |
+| **Unitarias** | Cada validador (RUT con Módulo 11, Luhn, teléfonos, patentes...), preprocesadores, reglas, enmascarado, lectura determinista de tablas, guardado por lotes, comparar escaneos, escaneo completo de tablas | pytest | `tests/test_*.py` | 241 |
 | **Integración** | Flujos completos por la API: Admin → Auditor → Visor, escaneo → revisión → exportación, reglas nuevas | pytest + TestClient (httpx) | `tests/integracion/` | 4 |
 | **Seguridad** | Control de acceso por rol, fuerza bruta, inyección SQL, inyección de fórmulas CSV, *path traversal*, tamaño de archivos, solo lectura en la base del cliente, fuga de datos | pytest + TestClient | `tests/seguridad/` | 18 |
 | **Rendimiento** | Tiempos de escaneo con volúmenes realistas y que un escaneo largo no bloquee a los demás usuarios | pytest + `time.perf_counter` | `tests/rendimiento/` | 4 |
 | **Aceptación (manual)** | El usuario cumple sus tareas en la web | Navegador + casos PR-24 a PR-26 | Este documento | 3 |
-| **Total automatizadas** | | | | **257** |
+| **Total automatizadas** | | | | **267** |
 
 Las pruebas de seguridad se basan en el **OWASP Top 10**: A01 control de acceso roto, A03 inyección,
 A07 fallas de autenticación y A09 fallas de registro y monitoreo.
@@ -103,13 +103,19 @@ En un PC lento, los umbrales de rendimiento se pueden relajar con `KSECURE_FACTO
 | PR-20 | CSV de 2.000 filas (12.000 celdas) por la API | RNF-05 | < 30 s | 1,1 s (≈ 1.800 filas/s) | ✅ |
 | PR-21 | Texto de 1,4 MB sin datos sensibles | — | < 15 s y 0 falsos positivos | 0,2 s, 0 hallazgos | ✅ |
 | PR-22 | 5.000 RUT con el validador | RNF-05 | < 10 s | 0,4 s | ✅ |
-| PR-23 | Tabla de 100.000 filas | RNF-06 | ≤ 60 s | 32 s (ERS); 29 s el 22/11/2026 con la versión final*** | ✅ |
+| PR-23 | Tabla de 100.000 filas | RNF-06 | ≤ 60 s | 32 s (ERS); 29 s el 22/11/2026; 11 s el 25/11/2026 tras optimizar el motor*** | ✅ |
 | PR-29 | CSV de 100.000 filas subido por la web | RNF-14 | < 1 GB de RAM | ~265 MB y ~28 s (antes ~2,1 GB y ~52 s)** | ✅ |
 | PR-30 | Otro usuario navega mientras corre un escaneo largo | RNF-18 | Responde sin esperar al escaneo | Responde de inmediato; sin el hilo aparte esperaba 1,2 s (`rendimiento/test_concurrencia.py`) | ✅ |
 
 \* Medido el 31/10/2026 en el entorno de desarrollo. \*\* Medido el 18/11/2026, antes y después de HU-29, en el
 mismo equipo (detalle en [Requisitos no funcionales](Requisitos_No_Funcionales.md), sección 1). \*\*\* Tabla SQLite de
 100.000 filas y 6 columnas (RUT, nombre, celular, correo y monto), escaneada con `escanear_bd`: 29,3 s y 300.000 hallazgos.
+El 25/11/2026, en el mismo equipo y con la misma tabla: 32,1 s con la versión anterior y 11,3 s con la optimizada,
+con los mismos 300.000 hallazgos. La optimización compila cada palabra clave una sola vez, valida una sola vez los
+valores que se repiten en una columna, salta en cada celda los validadores que no pueden encontrar nada (por ejemplo,
+un RUT sin guion o un teléfono con menos de 8 dígitos) y no revisa las columnas de fecha y hora. En la base del
+cliente simulado completa (PostgreSQL, 18.242 filas) bajó de 6,1 s a 1,2 s, y con 91.162 filas de 29 s a 5 s, con
+exactamente los mismos hallazgos (15.304 y 76.448, comparados uno a uno con la versión anterior).
 
 ### 6.4 Aceptación (manual, con un usuario)
 
@@ -149,16 +155,17 @@ ejecutó `pytest` en esa versión el 16/11/2026.
 | 5 | 26/10 | `ce88693` | **141** | ✅ 141 pasan | Preprocesadores de archivos (16), mantenedor de reglas (23), API web (16), base del cliente simulado (3) y más casos de validadores (+11) |
 | 6 | 09/11 | `122ae94` | **235** | ✅ 235 pasan | Sesión y roles (20), recuperación de contraseña (18), bitácora (13), exportación (7), revisión de hallazgos (7), cifrado (4), **integración** (4), **seguridad** (18) y **rendimiento** (3) |
 | 7 | en curso (cierra el 23/11) | — | **257** al 18/11 | ✅ 257 pasan | Lectura determinista de tablas (5, HU-27), guardado por lotes (7, HU-29), escaneo sin bloquear a los demás (1, RNF-18) y comparar escaneos (9, HU-17) |
+| Entrega final | 25/11 | — | **267** | ✅ 267 pasan | Escaneo completo de tablas, también por la web, y optimizaciones que no cambian el resultado (10) |
 
-Cobertura por tipo de prueba al 18/11 (sprint 7):
+Cobertura por tipo de prueba al 25/11 (entrega final):
 
 | Tipo | Archivos | Pruebas |
 |---|---|---|
-| Unitarias | `tests/test_*.py` (15 archivos) | 231 |
+| Unitarias | `tests/test_*.py` (16 archivos) | 241 |
 | Integración | `tests/integracion/` | 4 |
 | Seguridad | `tests/seguridad/` | 18 |
 | Rendimiento | `tests/rendimiento/` | 4 |
-| **Total** | | **257** |
+| **Total** | | **267** |
 
 Para reproducir cualquier fila (por ejemplo, la del sprint 5):
 
